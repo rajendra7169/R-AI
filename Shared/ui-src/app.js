@@ -65,7 +65,9 @@
 
       // Extensions
       sysBtn: $('#sys-prompt-btn'),
+      sysOverlay: $('#sys-overlay'),
       sysPanel: $('#sys-panel'),
+      sysCloseBtn: $('#sys-close-btn'),
       sysTa: $('#sys-ta'),
       logModeSel: $('#log-mode-select'),
       sysSet: $('#set-global-btn'),
@@ -275,10 +277,18 @@
         S.mode = mode;
         D.tabChat.classList.toggle('act', mode === 'chat');
         D.tabImage.classList.toggle('act', mode === 'image');
-        D.chat.style.display = mode === 'chat' ? 'flex' : 'none';
         D.imgPanel.classList.toggle('on', mode === 'image');
-        D.inpArea = document.getElementById('inp-area');
-        if (D.inpArea) D.inpArea.style.display = mode === 'chat' ? 'block' : 'none';
+        // Clear inline display when returning to chat so the stylesheet's
+        // own display values apply (#chat is `flex` column, #inp-area is
+        // `flex` column-centered). Setting `block` here previously broke
+        // the input bar's centering when you switched modes.
+        if (mode === 'chat') {
+          D.chat.style.display = '';
+          if (D.inpArea) D.inpArea.style.display = '';
+        } else {
+          D.chat.style.display = 'none';
+          if (D.inpArea) D.inpArea.style.display = 'none';
+        }
         if (mode === 'image') {
           updateEngineStatus();
         } else {
@@ -565,9 +575,9 @@
           .map(
             (m) => `
         <div class="mm-opt ${m.name === S.model ? 'sel' : ''}" data-model="${m.name}">
-            <div class="mmo-icon"><i class="fa-solid ${isVision(m.name) ? 'fa-eye' : 'fa-microchip'}"></i></div>
+            <div class="mmo-icon"><img src="./assets/r-ai-logo.png" alt=""/></div>
             <div class="mmo-info">
-                <div class="mmo-name">${esc(m.name)}</div>
+                <div class="mmo-name">${esc(m.name)}${isVision(m.name) ? ' <span class="mmo-tag"><i class="fa-solid fa-eye"></i> Vision</span>' : ''}</div>
                 <div class="mmo-desc">${(m.size / 1e9).toFixed(1)} GB</div>
             </div>
             <i class="fa-solid fa-check mmo-chk"></i>
@@ -1132,7 +1142,7 @@
             : '';
 
         return `<div class="mr">
-        <div class="ma ai"><svg viewBox="0 0 24 24"><path d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z" fill="white"/></svg></div>
+        <div class="ma ai"><img src="./assets/r-ai-logo.png" alt="R-AI"/></div>
         <div class="mc"><div class="mt">${parsed || ''}</div>${actions}</div>
     </div>`;
       }
@@ -1317,15 +1327,31 @@
         );
 
       // Panel toggles
+      const openSysPanel = () => {
+        D.sysOverlay.classList.add('open');
+        D.sysOverlay.setAttribute('aria-hidden', 'false');
+        toggleModelMenu(false);
+        setTimeout(() => { try { D.sysTa.focus(); } catch (_) {} }, 80);
+      };
+      const closeSysPanel = () => {
+        D.sysOverlay.classList.remove('open');
+        D.sysOverlay.setAttribute('aria-hidden', 'true');
+      };
+
       D.modelBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleModelMenu();
-        D.sysPanel.classList.remove('open');
+        closeSysPanel();
       });
       D.sysBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        D.sysPanel.classList.toggle('open');
-        toggleModelMenu(false);
+        if (D.sysOverlay.classList.contains('open')) closeSysPanel();
+        else openSysPanel();
+      });
+      D.sysCloseBtn.addEventListener('click', closeSysPanel);
+      // Click outside the panel (on the dimmed overlay) to close
+      D.sysOverlay.addEventListener('click', (e) => {
+        if (e.target === D.sysOverlay) closeSysPanel();
       });
       D.logModeSel.addEventListener('change', saveLogMode);
       D.sysSet.addEventListener('click', saveGlobalPrompt);
@@ -1342,13 +1368,13 @@
           if (e.target === D.imgModal) closeImgModal();
         });
         document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape' && D.imgModal.classList.contains('on')) closeImgModal();
+          if (e.key !== 'Escape') return;
+          if (D.imgModal.classList.contains('on')) { closeImgModal(); return; }
+          if (D.sysOverlay.classList.contains('open')) { closeSysPanel(); return; }
         });
 
         document.addEventListener('click', (e) => {
           if (!D.modelDd.contains(e.target)) toggleModelMenu(false);
-          if (!D.sysPanel.contains(e.target) && !D.sysBtn.contains(e.target))
-            D.sysPanel.classList.remove('open');
         });
         window.addEventListener('resize', () => {
           if (window.innerWidth <= 768 && S.sbOpen) toggleSB(false);

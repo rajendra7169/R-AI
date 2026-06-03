@@ -6,7 +6,8 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Portable AI - Fast Chat</title>
+    <title>R-AI · Local Chat</title>
+    <link rel="icon" type="image/png" href="./assets/r-ai-logo.png" />
     <!-- Vendor assets (downloaded offline by platform installer) -->
     <link rel="stylesheet" href="./vendor/fa-all.min.css" />
     <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
@@ -27,14 +28,9 @@
         <div class="sb-hd">
           <div class="sb-brand">
             <div class="sb-brand-icon">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
-                  fill="white"
-                />
-              </svg>
+              <img src="./assets/r-ai-logo.png" alt="R-AI" />
             </div>
-            <span class="sb-brand-name">Portable AI</span>
+            <span class="sb-brand-name">R-AI</span>
           </div>
           <button class="nc-btn" id="nc-btn" aria-label="New chat">
             <i class="fa-solid fa-plus"></i>
@@ -116,29 +112,51 @@
           </button>
         </header>
 
-      <!-- System Prompt Panel (slides down from topbar) -->
-      <div id="sys-panel">
-        <div class="sys-row">
-          <label>System Instructions</label>
-          <textarea id="sys-ta" placeholder="Add context or instructions for this conversation..."></textarea>
-        </div>
-        <div class="sys-actions">
-          <button class="sys-btn primary" id="set-global-btn">
-            Set as Default
-          </button>
-          <button class="sys-btn secondary" id="clear-global-btn">
-            Clear
-          </button>
-        </div>
-        <hr class="sys-divider" />
-        <div class="sys-row">
-          <label for="log-mode-select">Logging</label>
-          <div class="sys-subrow">
-            <select id="log-mode-select" class="sys-select">
-              <option value="errors_only">Errors only (Recommended)</option>
-              <option value="all">Everything (Verbose)</option>
-            </select>
-            <span class="sys-hint">Saved per device. Reduce disk writes by using errors only.</span>
+      <!-- System Instructions Modal (full-screen overlay) -->
+      <div id="sys-overlay" aria-hidden="true">
+        <div id="sys-panel" role="dialog" aria-modal="true" aria-labelledby="sys-panel-title">
+          <header class="sys-head">
+            <div class="sys-head-text">
+              <h2 id="sys-panel-title">Instructions &amp; Settings</h2>
+              <p class="sys-head-sub">Tune how R-AI behaves in this conversation.</p>
+            </div>
+            <button class="sys-close" id="sys-close-btn" aria-label="Close instructions">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </header>
+
+          <div class="sys-body">
+            <section class="sys-section">
+              <div class="sys-section-head">
+                <h3>System Instructions</h3>
+                <span class="sys-section-hint">
+                  Behaviour guidance prepended to every message in this chat.
+                </span>
+              </div>
+              <textarea id="sys-ta"
+                placeholder="e.g. You are a precise coding assistant. Reply with concise code blocks first, then a one-line explanation."></textarea>
+              <div class="sys-actions">
+                <button class="sys-btn primary" id="set-global-btn">
+                  <i class="fa-solid fa-thumbtack"></i> Set as Default
+                </button>
+                <button class="sys-btn secondary" id="clear-global-btn">
+                  <i class="fa-regular fa-trash-can"></i> Clear
+                </button>
+              </div>
+            </section>
+
+            <section class="sys-section">
+              <div class="sys-section-head">
+                <h3>Logging</h3>
+                <span class="sys-section-hint">
+                  Saved per device. Errors-only keeps disk writes minimal.
+                </span>
+              </div>
+              <select id="log-mode-select" class="sys-select">
+                <option value="errors_only">Errors only (Recommended)</option>
+                <option value="all">Everything (Verbose)</option>
+              </select>
+            </section>
           </div>
         </div>
       </div>
@@ -150,17 +168,12 @@
             <div class="wl-wrap">
               <div class="wl-ring"></div>
               <div class="wl-inner">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
-                    fill="white"
-                  />
-                </svg>
+                <img src="./assets/r-ai-logo.png" alt="R-AI" class="wl-logo" />
               </div>
             </div>
 
             <div class="wt">Hello</div>
-            <div class="ws">What can I help you with today?</div>
+            <div class="ws">R-AI is ready — running locally on your hardware.</div>
 
             <div class="sg">
               <div
@@ -222,25 +235,7 @@
                   id="model-btn"
                   aria-label="Select model"
                 >
-                  <svg viewBox="0 0 24 24">
-                    <defs>
-                      <linearGradient
-                        id="mvg"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="100%"
-                      >
-                        <stop offset="0%" stop-color="var(--grad1)" />
-                        <stop offset="50%" stop-color="var(--grad2)" />
-                        <stop offset="100%" stop-color="var(--grad3)" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
-                      fill="url(#mvg)"
-                    />
-                  </svg>
+                  <img src="./assets/r-ai-logo.png" alt="" class="model-btn-logo" />
                   <span id="model-name">Loading...</span>
                   <i class="fa-solid fa-chevron-down chev"></i>
                 </button>
@@ -316,8 +311,18 @@
         <!-- Image Generation Panel -->
         <div id="img-panel">
           <div class="img-wrap">
+            <header class="img-header">
+              <div class="img-header-icon">
+                <img src="./assets/r-ai-logo.png" alt="R-AI" />
+              </div>
+              <div class="img-header-text">
+                <h2>Image Studio</h2>
+                <p>Generate images locally with Stable Diffusion. Unload the chat engine first to free RAM.</p>
+              </div>
+            </header>
+
             <div class="img-engine-card" id="img-engine-card">
-              <div class="img-engine-title">Engine Control</div>
+              <div class="img-engine-title">Engine Status</div>
               <div class="img-engine-row">
                 <div class="img-engine-info">
                   <span class="img-engine-dot" id="chat-engine-dot"></span>
@@ -338,65 +343,75 @@
 
             <div class="img-warn" id="img-warn" style="display:none;"></div>
 
-            <div class="img-row">
-              <label>Prompt</label>
-              <textarea id="img-prompt" placeholder="Describe the image you want to generate..."></textarea>
-            </div>
+            <section class="img-card">
+              <div class="img-card-head">
+                <h3>Prompt</h3>
+                <span class="img-card-hint">Describe what you want to see.</span>
+              </div>
+              <div class="img-row">
+                <textarea id="img-prompt" placeholder="A cinematic portrait of a mountain climber at sunrise, ultra detailed..."></textarea>
+              </div>
+              <div class="img-row">
+                <label>Negative Prompt</label>
+                <textarea id="img-neg" placeholder="blurry, low quality, watermark, text..." style="min-height:42px"></textarea>
+              </div>
+            </section>
 
-            <div class="img-row">
-              <label>Negative Prompt</label>
-              <textarea id="img-neg" placeholder="Things to avoid (optional)..." style="min-height:40px"></textarea>
-            </div>
-
-            <div class="img-grid">
-              <div class="img-row">
-                <label>Steps</label>
-                <input type="number" id="img-steps" value="20" min="1" max="50" />
+            <section class="img-card">
+              <div class="img-card-head">
+                <h3>Parameters</h3>
+                <span class="img-card-hint">More steps = sharper but slower.</span>
               </div>
-              <div class="img-row">
-                <label>CFG</label>
-                <input type="number" id="img-cfg" value="7.0" min="1" max="15" step="0.5" />
+              <div class="img-grid">
+                <div class="img-row">
+                  <label>Steps</label>
+                  <input type="number" id="img-steps" value="20" min="1" max="50" />
+                </div>
+                <div class="img-row">
+                  <label>CFG</label>
+                  <input type="number" id="img-cfg" value="7.0" min="1" max="15" step="0.5" />
+                </div>
+                <div class="img-row">
+                  <label>Width</label>
+                  <select id="img-width">
+                    <option value="256">256</option>
+                    <option value="320">320</option>
+                    <option value="384">384</option>
+                    <option value="448">448</option>
+                    <option value="512" selected>512</option>
+                    <option value="576">576</option>
+                    <option value="640">640</option>
+                    <option value="768">768</option>
+                  </select>
+                </div>
+                <div class="img-row">
+                  <label>Height</label>
+                  <select id="img-height">
+                    <option value="256">256</option>
+                    <option value="320">320</option>
+                    <option value="384">384</option>
+                    <option value="448">448</option>
+                    <option value="512" selected>512</option>
+                    <option value="576">576</option>
+                    <option value="640">640</option>
+                    <option value="768">768</option>
+                  </select>
+                </div>
+                <div class="img-row">
+                  <label>Seed</label>
+                  <input type="number" id="img-seed" value="-1" min="-1" />
+                </div>
+                <div class="img-row">
+                  <label>Sampler</label>
+                  <select id="img-sampler">
+                    <option value="euler_a" selected>Euler a</option>
+                    <option value="euler">Euler</option>
+                    <option value="heun">Heun</option>
+                    <option value="dpm++2m">DPM++ 2M</option>
+                  </select>
+                </div>
               </div>
-              <div class="img-row">
-                <label>Width</label>
-                <select id="img-width">
-                  <option value="256">256</option>
-                  <option value="320">320</option>
-                  <option value="384">384</option>
-                  <option value="448">448</option>
-                  <option value="512" selected>512</option>
-                  <option value="576">576</option>
-                  <option value="640">640</option>
-                  <option value="768">768</option>
-                </select>
-              </div>
-              <div class="img-row">
-                <label>Height</label>
-                <select id="img-height">
-                  <option value="256">256</option>
-                  <option value="320">320</option>
-                  <option value="384">384</option>
-                  <option value="448">448</option>
-                  <option value="512" selected>512</option>
-                  <option value="576">576</option>
-                  <option value="640">640</option>
-                  <option value="768">768</option>
-                </select>
-              </div>
-              <div class="img-row">
-                <label>Seed</label>
-                <input type="number" id="img-seed" value="-1" min="-1" />
-              </div>
-              <div class="img-row">
-                <label>Sampler</label>
-                <select id="img-sampler">
-                  <option value="euler_a" selected>Euler a</option>
-                  <option value="euler">Euler</option>
-                  <option value="heun">Heun</option>
-                  <option value="dpm++2m">DPM++ 2M</option>
-                </select>
-              </div>
-            </div>
+            </section>
 
             <div class="img-actions">
               <button class="img-btn primary" id="img-gen-btn">
@@ -418,7 +433,7 @@
                 </div>
               </div>
               <div id="img-result" style="display:none; flex-direction:column; align-items:center; gap:12px; width:100%;">
-                <img id="img-result-img" src="" alt="Generated" style="max-width:560px; width:100%; border-radius:var(--radius-lg); border:1px solid var(--bd); box-shadow:0 8px 32px var(--shd);" />
+                <img id="img-result-img" class="img-result-img" src="" alt="Generated" />
                 <div class="img-params-card" id="img-params-card">
                   <div class="img-params-title">Generation Parameters</div>
                   <div class="img-params-grid" id="img-params-grid"></div>

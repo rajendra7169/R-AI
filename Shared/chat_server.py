@@ -1603,10 +1603,71 @@ class ThreadedHTTPServer(http.server.HTTPServer):
 HOST_HARDWARE_SPECS = _get_hardware_specs()
 LOGGER, LOG_LISTENER = configure_logging()
 
+def _find_app_mode_browser():
+    """Return the path of a Chromium-based browser that supports --app=, or None.
+
+    Edge, Chrome, Brave, and Chromium all open --app=URL as a borderless
+    standalone window (no tabs, no URL bar). This lets R-AI feel like a native
+    app while still running in the system webview.
+    """
+    plat = platform.system()
+    candidates = []
+    if plat == "Windows":
+        program_files = os.environ.get("ProgramFiles", r"C:\\Program Files")
+        program_files_x86 = os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")
+        local_app = os.environ.get("LOCALAPPDATA", "")
+        candidates = [
+            os.path.join(program_files_x86, "Microsoft", "Edge", "Application", "msedge.exe"),
+            os.path.join(program_files, "Microsoft", "Edge", "Application", "msedge.exe"),
+            os.path.join(program_files, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(program_files_x86, "Google", "Chrome", "Application", "chrome.exe"),
+            os.path.join(local_app, "Google", "Chrome", "Application", "chrome.exe") if local_app else "",
+            os.path.join(program_files, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+        ]
+    elif plat == "Darwin":
+        candidates = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        ]
+    else:
+        import shutil as _shutil
+        candidates = [
+            _shutil.which("google-chrome-stable"),
+            _shutil.which("google-chrome"),
+            _shutil.which("chromium"),
+            _shutil.which("chromium-browser"),
+            _shutil.which("microsoft-edge"),
+            _shutil.which("brave-browser"),
+        ]
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+    return None
+
+
 def open_browser_delayed():
-    """Open the browser after a short delay to ensure server is ready."""
+    """Open the browser after a short delay to ensure server is ready.
+
+    Tries Chromium --app= first (borderless window, no browser chrome) so the
+    UI feels native. Falls back to the default browser if no Chromium-class
+    browser is found.
+    """
     time.sleep(1.0)
-    webbrowser.open(f"http://localhost:{CHAT_SERVER_PORT}")
+    url = f"http://localhost:{CHAT_SERVER_PORT}"
+    browser = _find_app_mode_browser()
+    if browser:
+        try:
+            kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+            if platform.system() == "Windows":
+                # Detach so closing the terminal doesn't kill the window
+                kwargs["creationflags"] = 0x00000008  # DETACHED_PROCESS
+            subprocess.Popen([browser, f"--app={url}"], **kwargs)
+            return
+        except Exception:
+            pass
+    webbrowser.open(url)
 
 def main():
     global AUTH_TOKEN
