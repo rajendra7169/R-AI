@@ -568,11 +568,20 @@ if (Test-Path "$USB_Drive\Shared\bin\ollama-windows.exe") {
     if (Test-Path $OllamaDest) {
         Write-Host "      Extracting Ollama..." -ForegroundColor Yellow
         try {
-            New-Item -ItemType Directory -Force -Path $TempOllamaDir | Out-Null
-            Expand-ZipArchive -ZipPath $OllamaDest -DestDir $TempOllamaDir
-            # Move the ollama.exe up and rename it to explicitly be ollama-windows.exe
-            Move-Item -Path "$TempOllamaDir\ollama.exe" -Destination "$USB_Drive\Shared\bin\ollama-windows.exe" -Force
-            # Cleanup
+            # Extract the whole archive directly into Shared\bin so that
+            # ollama.exe lives next to its lib\ollama\ companions
+            # (llama-server.exe, llama-quantize.exe, ggml-*.dll, cuda/rocm/vulkan
+            # subfolders). Modern Ollama 0.30+ fails on `create` / GPU discovery
+            # without these helpers — extracting only ollama.exe gave a broken
+            # install.
+            Expand-ZipArchive -ZipPath $OllamaDest -DestDir "$USB_Drive\Shared\bin"
+            # Rename ollama.exe -> ollama-windows.exe (project convention).
+            if (Test-Path "$USB_Drive\Shared\bin\ollama.exe") {
+                if (Test-Path "$USB_Drive\Shared\bin\ollama-windows.exe") {
+                    Remove-Item "$USB_Drive\Shared\bin\ollama-windows.exe" -Force
+                }
+                Move-Item -Path "$USB_Drive\Shared\bin\ollama.exe" -Destination "$USB_Drive\Shared\bin\ollama-windows.exe" -Force
+            }
             Remove-Item $TempOllamaDir -Force -Recurse -ErrorAction SilentlyContinue
             Remove-Item $OllamaDest -Force -ErrorAction SilentlyContinue
             Write-Host "      Ollama Setup Complete!" -ForegroundColor Green

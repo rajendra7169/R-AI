@@ -72,10 +72,11 @@ def _cleanup_old_image_jobs():
 
 # Optional: psutil for hardware stats (graceful fallback to native APIs if not installed)
 try:
-    import psutil
+    import psutil  # type: ignore[import-not-found]
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
+    psutil = None  # type: ignore[assignment]
 
 # ── Configuration ──────────────────────────────────────────────
 CHAT_SERVER_PORT = 3333
@@ -1659,11 +1660,23 @@ def open_browser_delayed():
     browser = _find_app_mode_browser()
     if browser:
         try:
+            # Dedicated profile dir so the app-mode window never shares state
+            # with the user's main browser session and always opens fresh.
+            profile_dir = os.path.join(SCRIPT_DIR, "chat_data", ".browser_profile")
+            os.makedirs(profile_dir, exist_ok=True)
+            args = [
+                browser,
+                f"--app={url}",
+                f"--user-data-dir={profile_dir}",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--window-size=1280,820",
+            ]
             kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
             if platform.system() == "Windows":
                 # Detach so closing the terminal doesn't kill the window
                 kwargs["creationflags"] = 0x00000008  # DETACHED_PROCESS
-            subprocess.Popen([browser, f"--app={url}"], **kwargs)
+            subprocess.Popen(args, **kwargs)
             return
         except Exception:
             pass

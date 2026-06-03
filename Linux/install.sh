@@ -93,14 +93,16 @@ else
     fi
     if [ ! -f "$OLLAMA_BIN" ]; then
         ARCHIVE_URL="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tar.zst"
-        echo -e "      Downloading Ollama engine (streaming - stops after binary extracted)..."
-        # bin/ollama is first in the archive, so tar exits early and we skip
-        # the trailing CUDA libs.
+        echo -e "      Downloading Ollama engine (~1 GB, includes GPU runtime)..."
+        # Extract the full archive: modern Ollama 0.30+ needs lib/ollama/
+        # helpers (llama-server, llama-quantize, ggml-*.so, CUDA/ROCm/Vulkan
+        # subdirs) sitting next to the main binary, or `ollama create` and
+        # GPU discovery fail.
         curl -L --fail "$ARCHIVE_URL" | \
-            tar --use-compress-program=zstd -xf - -C "$SHARED_BIN" \
-                --strip-components=1 bin/ollama 2>/dev/null
+            tar --use-compress-program=zstd -xf - -C "$SHARED_BIN" 2>/dev/null
         PIPE_RC=${PIPESTATUS[1]}
-        [ -f "$SHARED_BIN/ollama" ] && mv "$SHARED_BIN/ollama" "$OLLAMA_BIN"
+        [ -f "$SHARED_BIN/bin/ollama" ] && mv "$SHARED_BIN/bin/ollama" "$OLLAMA_BIN"
+        rmdir "$SHARED_BIN/bin" 2>/dev/null
         if [ "$PIPE_RC" -ne 0 ] || ! is_native_binary "$OLLAMA_BIN"; then
             echo -e "${RED}      ERROR: Extraction failed or binary is invalid!${RST}"
             rm -f "$OLLAMA_BIN"
