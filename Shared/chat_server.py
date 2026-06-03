@@ -592,11 +592,16 @@ def _parse_sd_output(pipe, job_id, total_steps):
     We merge stdout+stderr so we catch progress regardless of which stream
     the binary writes it to."""
     # Match: "step 1 sampling completed" or "step 1/20" or "step 1 of 20"
-    step_pattern = re.compile(r"step\s+(\d+)", re.IGNORECASE)
-    # Only match X/Y when it follows "sampling" to avoid model-loading bars
+    # Match "sampling ... N/M" explicitly — most reliable signal.
     sampling_pattern = re.compile(r"sampling.*?\b(\d+)\s*/\s*(\d+)", re.IGNORECASE)
-    # Only match % when it follows "sampling"
-    pct_pattern = re.compile(r"sampling.*?(\d+)")
+    # Fallback: "N/<total_steps>" anywhere — only matches the actual sampling
+    # phase because model-loading lines use different denominators (e.g.
+    # "tensor 44/850"). Avoids the previous false-positive where a loose
+    # "step \d+" regex grabbed numbers from tensor-loading log lines and the
+    # UI reported nonsense like "step 44/20".
+    fraction_pattern = re.compile(r"\b(\d+)\s*/\s*" + re.escape(str(total_steps)) + r"\b")
+    # Percentage fallback only when accompanied by the word "sampling".
+    pct_pattern = re.compile(r"sampling.*?(\d+)\s*%", re.IGNORECASE)
 
     last_step = 0
     step_start_time = None
@@ -612,19 +617,33 @@ def _parse_sd_output(pipe, job_id, total_steps):
             current_step = 0
             matched_total = total_steps
 
-            m = step_pattern.search(line)
+            m = sampling_pattern.search(line)
             if m:
-                current_step = int(m.group(1))
-            else:
-                m = sampling_pattern.search(line)
+                candidate = int(m.group(1))
+                candidate_total = int(m.group(2))
+                # Sanity: total should be small (1..200). Otherwise this is a
+                # tensor-loading line that happened to contain "sampling".
+                if 0 < candidate <= candidate_total <= 200:
+                    current_step = candidate
+                    matched_total = candidate_total
+            if current_step == 0:
+                m = fraction_pattern.search(line)
                 if m:
-                    current_step = int(m.group(1))
-                    matched_total = int(m.group(2))
-                else:
-                    m = pct_pattern.search(line)
-                    if m and total_steps > 0:
-                        pct = int(m.group(1))
+                    candidate = int(m.group(1))
+                    if 0 < candidate <= total_steps:
+                        current_step = candidate
+                        matched_total = total_steps
+            if current_step == 0:
+                m = pct_pattern.search(line)
+                if m and total_steps > 0:
+                    pct = int(m.group(1))
+                    if 0 <= pct <= 100:
                         current_step = int(pct / 100.0 * total_steps)
+                        matched_total = total_steps
+
+            # Clamp: step never exceeds total
+            if matched_total > 0 and current_step > matched_total:
+                current_step = matched_total
 
             if current_step > 0:
                 now = time.time()
