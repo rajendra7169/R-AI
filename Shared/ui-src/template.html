@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Portable AI - Fast Chat</title>
+    <!-- Vendor assets (downloaded offline by platform installer) -->
+    <link rel="stylesheet" href="./vendor/fa-all.min.css" />
+    <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
+    <script src="./vendor/marked.min.js"></script>
+    <script src="./vendor/highlight.min.js"></script>
+    <style>
+{{INCLUDE: styles/fonts.css}}
+    </style>
+
+    <style>
+{{INCLUDE: styles/main.css}}
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ SIDEBAR ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ -->
+      <aside id="sidebar" role="navigation" aria-label="Chat history">
+        <div class="sb-hd">
+          <div class="sb-brand">
+            <div class="sb-brand-icon">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
+                  fill="white"
+                />
+              </svg>
+            </div>
+            <span class="sb-brand-name">Portable AI</span>
+          </div>
+          <button class="nc-btn" id="nc-btn" aria-label="New chat">
+            <i class="fa-solid fa-plus"></i>
+            <span>New chat</span>
+          </button>
+        </div>
+
+        <div class="sb-list" id="cv-list"></div>
+
+        <div class="sb-ft">
+          <button
+            class="sf-btn"
+            id="th-sb"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            <i class="fa-solid fa-moon"></i>
+          </button>
+          <div class="sf-sp"></div>
+          <button
+            class="sf-btn"
+            id="ca-btn"
+            aria-label="Clear all chats"
+            title="Clear all chats"
+          >
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </aside>
+
+      <div id="overlay"></div>
+
+      <!-- ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ MAIN ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ -->
+      <main id="main">
+        <!-- Top Bar -->
+        <header id="topbar">
+          <button class="tb-btn" id="sb-tog" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+
+          <div class="tb-title" id="tb-title"></div>
+          <div class="tb-sp"></div>
+
+          <!-- Mode Switcher -->
+          <div class="mode-tabs" id="mode-tabs">
+            <button class="mode-tab act" data-mode="chat" id="tab-chat">Chat</button>
+            <button class="mode-tab" data-mode="image" id="tab-image">Image</button>
+          </div>
+
+          <button id="sys-prompt-btn" title="System Instructions">
+            <i class="fa-solid fa-sliders"></i>
+            <span class="hidden sm:inline">Instructions</span>
+          </button>
+
+          <!-- HW Stats ÔÇö hidden on mobile -->
+          <div class="hw-bar hidden md:flex" id="hw-bar">
+            <div class="hw-stat">
+              <span style="color: var(--t3); font-size: 10px">CPU</span>
+              <div class="hw-mini-track">
+                <div class="hw-mini-bar cpu" id="cpu-bar"></div>
+              </div>
+              <span class="hw-pct" id="cpu-pct">--%</span>
+            </div>
+            <div class="hw-stat">
+              <span style="color: var(--t3); font-size: 10px">RAM</span>
+              <div class="hw-mini-track">
+                <div class="hw-mini-bar ram" id="ram-bar"></div>
+              </div>
+              <span class="hw-pct" id="ram-pct">--%</span>
+            </div>
+          </div>
+
+          <button
+            class="tb-btn md:hidden"
+            id="th-top"
+            aria-label="Toggle theme"
+          >
+            <i class="fa-solid fa-moon"></i>
+          </button>
+        </header>
+
+      <!-- System Prompt Panel (slides down from topbar) -->
+      <div id="sys-panel">
+        <div class="sys-row">
+          <label>System Instructions</label>
+          <textarea id="sys-ta" placeholder="Add context or instructions for this conversation..."></textarea>
+        </div>
+        <div class="sys-actions">
+          <button class="sys-btn primary" id="set-global-btn">
+            Set as Default
+          </button>
+          <button class="sys-btn secondary" id="clear-global-btn">
+            Clear
+          </button>
+        </div>
+        <hr class="sys-divider" />
+        <div class="sys-row">
+          <label for="log-mode-select">Logging</label>
+          <div class="sys-subrow">
+            <select id="log-mode-select" class="sys-select">
+              <option value="errors_only">Errors only (Recommended)</option>
+              <option value="all">Everything (Verbose)</option>
+            </select>
+            <span class="sys-hint">Saved per device. Reduce disk writes by using errors only.</span>
+          </div>
+        </div>
+      </div>
+
+        <!-- Chat / Messages -->
+        <div id="chat">
+          <!-- Welcome screen -->
+          <div id="welcome">
+            <div class="wl-wrap">
+              <div class="wl-ring"></div>
+              <div class="wl-inner">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div class="wt">Hello</div>
+            <div class="ws">What can I help you with today?</div>
+
+            <div class="sg">
+              <div
+                class="sc"
+                data-prompt="Help me write a professional email to reschedule a meeting"
+              >
+                <div class="si ib"><i class="fa-solid fa-pen-fancy"></i></div>
+                <div class="st">
+                  Help me write a professional email to reschedule a meeting
+                </div>
+              </div>
+              <div
+                class="sc"
+                data-prompt="Explain quantum computing in simple terms"
+              >
+                <div class="si ip"><i class="fa-solid fa-lightbulb"></i></div>
+                <div class="st">Explain quantum computing in simple terms</div>
+              </div>
+              <div
+                class="sc"
+                data-prompt="Write a Python function to find prime numbers"
+              >
+                <div class="si it"><i class="fa-solid fa-code"></i></div>
+                <div class="st">
+                  Write a Python function to find prime numbers
+                </div>
+              </div>
+              <div class="sc" data-prompt="Plan a 7-day trip to Tokyo, Japan">
+                <div class="si io"><i class="fa-solid fa-plane"></i></div>
+                <div class="st">Plan a 7-day trip to Tokyo, Japan</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="msgs"></div>
+        </div>
+
+        <!-- Input Area -->
+        <div id="inp-area">
+          <!-- Vision warning -->
+          <div id="vision-warn">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span
+              ><strong id="warn-model"></strong> is text-only. It cannot process
+              images. Try a vision model like <code>llava</code>.</span
+            >
+          </div>
+
+          <!-- Main input wrapper -->
+          <div class="iw" id="iw">
+            <!-- File/image preview bar (inside the box) -->
+            <div class="fbar" id="fbar"></div>
+
+            <!-- Model selector row ÔÇö INSIDE the input box at top -->
+            <div class="model-row">
+              <div class="model-dd" id="model-dd">
+                <button
+                  class="model-btn"
+                  id="model-btn"
+                  aria-label="Select model"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient
+                        id="mvg"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop offset="0%" stop-color="var(--grad1)" />
+                        <stop offset="50%" stop-color="var(--grad2)" />
+                        <stop offset="100%" stop-color="var(--grad3)" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M12 2L14.09 8.26L21 9.27L16 14.14L17.18 21.02L12 17.77L6.82 21.02L8 14.14L3 9.27L9.91 8.26L12 2Z"
+                      fill="url(#mvg)"
+                    />
+                  </svg>
+                  <span id="model-name">Loading...</span>
+                  <i class="fa-solid fa-chevron-down chev"></i>
+                </button>
+
+                <!-- Model dropdown (opens upward) -->
+                <div class="model-menu" id="model-menu">
+                  <div
+                    style="
+                      padding: 16px;
+                      font-size: 12px;
+                      color: var(--t3);
+                      text-align: center;
+                    "
+                  >
+                    Connecting to Engine...
+                  </div>
+                </div>
+              </div>
+              <div class="temp-ctrl">
+                <label class="temp-lbl">Temp</label>
+                <input
+                  type="number"
+                  id="temp-input"
+                  value="0.7"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            <!-- Textarea + send row -->
+            <div class="text-row">
+              <textarea
+                id="msg-inp"
+                placeholder="Ask anything..."
+                rows="1"
+                aria-label="Message input"
+              ></textarea>
+              <div class="ia">
+                <button
+                  class="ib2"
+                  id="att-btn"
+                  aria-label="Attach file"
+                  title="Upload image or PDF"
+                >
+                  <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <input
+                  type="file"
+                  id="f-inp"
+                  hidden
+                  multiple
+                  accept="image/*,.pdf,application/pdf,.txt,.md"
+                />
+                <button
+                  class="ib2 sbtn"
+                  id="send-btn"
+                  aria-label="Send message"
+                  disabled
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p class="disc">
+            Responses are generated locally. May contain inaccuracies.
+          </p>
+        </div>
+
+        <!-- Image Generation Panel -->
+        <div id="img-panel">
+          <div class="img-wrap">
+            <div class="img-engine-card" id="img-engine-card">
+              <div class="img-engine-title">Engine Control</div>
+              <div class="img-engine-row">
+                <div class="img-engine-info">
+                  <span class="img-engine-dot" id="chat-engine-dot"></span>
+                  <span class="img-engine-name">Chat Engine</span>
+                  <span class="img-engine-status" id="chat-engine-status">Checking...</span>
+                </div>
+                <button class="img-engine-btn" id="img-stop-ollama">Unload</button>
+                <button class="img-engine-btn primary" id="img-start-ollama">Load</button>
+              </div>
+              <div class="img-engine-row">
+                <div class="img-engine-info">
+                  <span class="img-engine-dot on" id="img-engine-dot"></span>
+                  <span class="img-engine-name">Image Engine</span>
+                  <span class="img-engine-status" id="img-engine-status">Checking...</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="img-warn" id="img-warn" style="display:none;"></div>
+
+            <div class="img-row">
+              <label>Prompt</label>
+              <textarea id="img-prompt" placeholder="Describe the image you want to generate..."></textarea>
+            </div>
+
+            <div class="img-row">
+              <label>Negative Prompt</label>
+              <textarea id="img-neg" placeholder="Things to avoid (optional)..." style="min-height:40px"></textarea>
+            </div>
+
+            <div class="img-grid">
+              <div class="img-row">
+                <label>Steps</label>
+                <input type="number" id="img-steps" value="20" min="1" max="50" />
+              </div>
+              <div class="img-row">
+                <label>CFG</label>
+                <input type="number" id="img-cfg" value="7.0" min="1" max="15" step="0.5" />
+              </div>
+              <div class="img-row">
+                <label>Width</label>
+                <select id="img-width">
+                  <option value="256">256</option>
+                  <option value="320">320</option>
+                  <option value="384">384</option>
+                  <option value="448">448</option>
+                  <option value="512" selected>512</option>
+                  <option value="576">576</option>
+                  <option value="640">640</option>
+                  <option value="768">768</option>
+                </select>
+              </div>
+              <div class="img-row">
+                <label>Height</label>
+                <select id="img-height">
+                  <option value="256">256</option>
+                  <option value="320">320</option>
+                  <option value="384">384</option>
+                  <option value="448">448</option>
+                  <option value="512" selected>512</option>
+                  <option value="576">576</option>
+                  <option value="640">640</option>
+                  <option value="768">768</option>
+                </select>
+              </div>
+              <div class="img-row">
+                <label>Seed</label>
+                <input type="number" id="img-seed" value="-1" min="-1" />
+              </div>
+              <div class="img-row">
+                <label>Sampler</label>
+                <select id="img-sampler">
+                  <option value="euler_a" selected>Euler a</option>
+                  <option value="euler">Euler</option>
+                  <option value="heun">Heun</option>
+                  <option value="dpm++2m">DPM++ 2M</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="img-actions">
+              <button class="img-btn primary" id="img-gen-btn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+              </button>
+            </div>
+
+            <div class="img-preview" id="img-preview">
+              <div id="img-progress" style="display:none; width:100%; align-items:center; flex-direction:column; gap:10px;">
+                <div class="img-progress-wrap">
+                  <div class="img-progress-bar-track">
+                    <div class="img-progress-bar-fill" id="img-bar-fill" style="width:0%"></div>
+                  </div>
+                  <div class="img-progress-info">
+                    <span id="img-step-text">Starting...</span>
+                    <span id="img-time-text">0s</span>
+                  </div>
+                  <div class="img-progress-eta" id="img-eta-text"></div>
+                </div>
+              </div>
+              <div id="img-result" style="display:none; flex-direction:column; align-items:center; gap:12px; width:100%;">
+                <img id="img-result-img" src="" alt="Generated" style="max-width:560px; width:100%; border-radius:var(--radius-lg); border:1px solid var(--bd); box-shadow:0 8px 32px var(--shd);" />
+                <div class="img-params-card" id="img-params-card">
+                  <div class="img-params-title">Generation Parameters</div>
+                  <div class="img-params-grid" id="img-params-grid"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="img-modal">
+      <button class="img-modal-close" id="img-modal-close" aria-label="Close">&times;</button>
+      <img id="img-modal-img" src="" alt="Enlarged generated image" />
+      <div class="img-modal-actions">
+        <button class="img-modal-btn" id="img-modal-download">
+          <i class="fa-solid fa-download"></i> Download PNG
+        </button>
+      </div>
+    </div>
+
+    <div id="toasts"></div>
+
+    <script>
+{{INCLUDE: app.js}}
+    </script>
+  </body>
+</html>

@@ -3,7 +3,7 @@ Shared/bin/
 Shared/models/
 Shared/vendor/
 
-# Runtime data
+# Runtime data (chat_data/ also hides the generated .access_token)
 Shared/chat_data/
 Shared/logs/
 

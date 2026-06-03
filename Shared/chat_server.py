@@ -10,9 +10,11 @@ A zero-dependency Python HTTP server that:
 Works on Windows, macOS, and Linux without installing anything.
 """
 
+import hashlib
 import http.server
 import json
 import os
+import secrets
 import sys
 import urllib.request
 import urllib.error
@@ -134,7 +136,10 @@ else:
 
 CHATS_DIR = os.path.join(SCRIPT_DIR, "chat_data")
 CHATS_FILE = os.path.join(CHATS_DIR, "chats.json")
+CHATS_PER_DIR = os.path.join(CHATS_DIR, "chats")
+CHATS_INDEX_FILE = os.path.join(CHATS_PER_DIR, "_index.json")
 SETTINGS_FILE = os.path.join(CHATS_DIR, "settings.json")
+TOKEN_FILE = os.path.join(CHATS_DIR, ".access_token")
 HTML_FILE = os.path.join(SCRIPT_DIR, "FastChatUI.html")
 LOG_DIR = os.path.join(SCRIPT_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "chat_server.log")
@@ -146,6 +151,10 @@ DEFAULT_LOG_MODE = LOG_MODE_ERRORS_ONLY
 DATA_FILE_LOCK = threading.RLock()
 LOG_MODE_LOCK = threading.RLock()
 ACTIVE_LOG_MODE = DEFAULT_LOG_MODE
+
+# LAN auth token (None = auth disabled). Populated in main() after data dir exists.
+AUTH_TOKEN = None
+AUTH_COOKIE_NAME = "r_ai_token"
 
 # ── Pure-Python Hardware Stats (no psutil needed) ──────────────
 _cpu_times_last = None  # (idle, total) from previous sample
@@ -303,6 +312,147 @@ def _set_active_log_mode(mode):
     global ACTIVE_LOG_MODE
     with LOG_MODE_LOCK:
         ACTIVE_LOG_MODE = _normalize_log_mode(mode)
+
+# ── Access Token (LAN auth) ───────────────────────────────────
+def _load_or_create_token():
+    """Read the LAN access token from disk, generating one if missing."""
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            existing = f.read().strip()
+        if len(existing) >= 16:
+            return existing
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass
+    token = secrets.token_urlsafe(24)
+    try:
+        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+            f.write(token)
+        try:
+            os.chmod(TOKEN_FILE, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return token
+
+# ── Per-chat persistence ──────────────────────────────────────
+def _safe_chat_id(value):
+    """Return a filesystem-safe chat id, generating one if the input is unusable."""
+    if not isinstance(value, str) or not value:
+        return None
+    cleaned = re.sub(r"[^A-Za-z0-9._\-]", "", value)
+    cleaned = cleaned.lstrip(".")  # don't accidentally create hidden files
+    if not cleaned or cleaned in (".", ".."):
+        return None
+    return cleaned[:96]
+
+def _compute_chat_hash(chat):
+    """Stable content hash of a single chat object for diff detection."""
+    try:
+        blob = json.dumps(chat, sort_keys=True, ensure_ascii=False, default=str)
+    except Exception:
+        blob = repr(chat)
+    return hashlib.sha256(blob.encode("utf-8", errors="replace")).hexdigest()
+
+def _load_chats_index():
+    try:
+        with open(CHATS_INDEX_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and isinstance(data.get("order"), list):
+            return data
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass
+    return {"order": [], "hashes": {}}
+
+def _write_chats_index(index):
+    os.makedirs(CHATS_PER_DIR, exist_ok=True)
+    tmp = CHATS_INDEX_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=2)
+        f.flush()
+    os.replace(tmp, CHATS_INDEX_FILE)
+
+def _per_chat_path(chat_id):
+    return os.path.join(CHATS_PER_DIR, chat_id + ".json")
+
+def _load_chats_aggregated():
+    """Read all per-chat files in index order; return a flat list."""
+    with DATA_FILE_LOCK:
+        index = _load_chats_index()
+        chats = []
+        for cid in index.get("order", []):
+            path = _per_chat_path(cid)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    chats.append(json.load(f))
+            except FileNotFoundError:
+                continue
+            except Exception:
+                continue
+        return chats
+
+def _save_chats_incremental(chats):
+    """Persist a chat list, writing only files whose content hash changed."""
+    if not isinstance(chats, list):
+        raise ValueError("Chats payload must be a JSON array")
+    with DATA_FILE_LOCK:
+        os.makedirs(CHATS_PER_DIR, exist_ok=True)
+        index = _load_chats_index()
+        old_hashes = dict(index.get("hashes", {}))
+        new_order = []
+        new_hashes = {}
+        seen = set()
+        written = 0
+        for i, chat in enumerate(chats):
+            cid = _safe_chat_id(chat.get("id") if isinstance(chat, dict) else None)
+            if cid is None or cid in seen:
+                cid = f"chat-{int(time.time()*1000)}-{i:04d}"
+                if isinstance(chat, dict):
+                    chat = dict(chat)
+                    chat["id"] = cid
+            seen.add(cid)
+            new_order.append(cid)
+            h = _compute_chat_hash(chat)
+            new_hashes[cid] = h
+            if old_hashes.get(cid) != h:
+                tmp = _per_chat_path(cid) + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(chat, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                os.replace(tmp, _per_chat_path(cid))
+                written += 1
+        for stale in set(old_hashes) - seen:
+            try:
+                os.remove(_per_chat_path(stale))
+            except FileNotFoundError:
+                pass
+            except Exception:
+                pass
+        _write_chats_index({"order": new_order, "hashes": new_hashes})
+        return written, len(chats)
+
+def _migrate_legacy_chats():
+    """If chats.json exists and per-chat store is empty, split it once."""
+    if not os.path.exists(CHATS_FILE):
+        return
+    if os.path.exists(CHATS_INDEX_FILE):
+        return
+    try:
+        with open(CHATS_FILE, "r", encoding="utf-8") as f:
+            legacy = json.load(f)
+        if not isinstance(legacy, list):
+            return
+        _save_chats_incremental(legacy)
+        try:
+            os.replace(CHATS_FILE, CHATS_FILE + ".legacy")
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 def _get_hardware_specs():
     """Collect a stable host hardware snapshot for log enrichment."""
@@ -718,10 +868,8 @@ def _log_event(level, message, request_context=None, exc_info=False):
 def ensure_data_dir():
     """Create required data folders if they don't exist."""
     os.makedirs(CHATS_DIR, exist_ok=True)
+    os.makedirs(CHATS_PER_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
-    if not os.path.exists(CHATS_FILE):
-        with open(CHATS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
     if not os.path.exists(SETTINGS_FILE):
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(
@@ -732,6 +880,7 @@ def ensure_data_dir():
                 },
                 f,
             )
+    _migrate_legacy_chats()
 
 class ChatHandler(http.server.BaseHTTPRequestHandler):
     """Handles all HTTP requests for the Portable AI Chat."""
@@ -772,7 +921,7 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
     def _cors_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
 
     def do_OPTIONS(self):
         """Handle CORS preflight."""
@@ -780,8 +929,60 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
         self._cors_headers()
         self.end_headers()
 
+    # ── Auth gate ──────────────────────────────────────────────
+    def _client_is_loopback(self):
+        ip = self.client_address[0] if self.client_address else ""
+        if ip in ("127.0.0.1", "::1", "localhost"):
+            return True
+        return ip.startswith("127.")
+
+    def _extract_token(self):
+        tok = self.headers.get("X-Auth-Token")
+        if tok:
+            return tok.strip()
+        auth = self.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[7:].strip()
+        cookie = self.headers.get("Cookie", "")
+        for part in cookie.split(";"):
+            part = part.strip()
+            if part.startswith(AUTH_COOKIE_NAME + "="):
+                return part[len(AUTH_COOKIE_NAME) + 1:].strip()
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            qs_tok = query.get("t", [None])[0]
+            if qs_tok:
+                return qs_tok.strip()
+        except Exception:
+            pass
+        return None
+
+    def _is_authorized(self):
+        if AUTH_TOKEN is None:
+            return True
+        if self._client_is_loopback():
+            return True
+        return self._extract_token() == AUTH_TOKEN
+
+    def _send_unauthorized(self):
+        body = json.dumps({
+            "error": "Access token required.",
+            "hint": "Append ?t=TOKEN to the URL once, or send the X-Auth-Token header. The token is printed in the server terminal."
+        }).encode()
+        self.send_response(401)
+        self.send_header("Content-Type", "application/json")
+        self._cors_headers()
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+
     # ── Routing ────────────────────────────────────────────────
     def do_GET(self):
+        if not self._is_authorized():
+            self._send_unauthorized()
+            return
         path = urlparse(self.path).path
 
         # Serve the main UI
@@ -821,6 +1022,9 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
             self._serve_static(path)
 
     def do_POST(self):
+        if not self._is_authorized():
+            self._send_unauthorized()
+            return
         path = urlparse(self.path).path
 
         if path == "/api/chats":
@@ -850,6 +1054,9 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_DELETE(self):
+        if not self._is_authorized():
+            self._send_unauthorized()
+            return
         path = urlparse(self.path).path
         if path.startswith("/ollama/"):
             self._proxy_ollama("DELETE")
@@ -860,6 +1067,24 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
 
     # ── Serve HTML ─────────────────────────────────────────────
     def _serve_html(self):
+        # If a valid token came via ?t=, set a cookie and redirect to a clean URL
+        # so subsequent same-origin fetches work without the query string.
+        if AUTH_TOKEN and not self._client_is_loopback():
+            try:
+                query = parse_qs(urlparse(self.path).query)
+                qs_tok = (query.get("t", [None])[0] or "").strip()
+            except Exception:
+                qs_tok = ""
+            if qs_tok and qs_tok == AUTH_TOKEN:
+                self.send_response(302)
+                self.send_header("Location", "/")
+                self.send_header(
+                    "Set-Cookie",
+                    f"{AUTH_COOKIE_NAME}={AUTH_TOKEN}; Path=/; SameSite=Strict; Max-Age=2592000; HttpOnly"
+                )
+                self._cors_headers()
+                self.end_headers()
+                return
         try:
             with open(HTML_FILE, "rb") as f:
                 content = f.read()
@@ -907,13 +1132,10 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
     def _get_chats(self):
         request_context = self._build_request_context("/api/chats")
         try:
-            with DATA_FILE_LOCK:
-                with open(CHATS_FILE, "r", encoding="utf-8") as f:
-                    data = f.read()
-        except (FileNotFoundError, json.JSONDecodeError):
-            data = "[]"
+            chats = _load_chats_aggregated()
+            data = json.dumps(chats, ensure_ascii=False)
         except Exception:
-            _log_event(logging.ERROR, "Failed to read chats file", request_context=request_context, exc_info=True)
+            _log_event(logging.ERROR, "Failed to read chats", request_context=request_context, exc_info=True)
             data = "[]"
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -926,18 +1148,17 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
         body = self._read_body()
         try:
             chats = json.loads(body)
-            with DATA_FILE_LOCK:
-                temp_file = CHATS_FILE + ".tmp"
-                with open(temp_file, "w", encoding="utf-8") as f:
-                    json.dump(chats, f, ensure_ascii=False, indent=2)
-                    f.flush()
-                os.replace(temp_file, CHATS_FILE)
-            _log_event(logging.INFO, "Chats saved successfully", request_context=request_context)
+            written, total = _save_chats_incremental(chats)
+            _log_event(
+                logging.INFO,
+                f"Chats saved successfully ({written}/{total} written)",
+                request_context=request_context,
+            )
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self._cors_headers()
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": True}).encode())
+            self.wfile.write(json.dumps({"ok": True, "written": written, "total": total}).encode())
         except Exception as e:
             _log_event(logging.ERROR, "Failed to save chats", request_context=request_context, exc_info=True)
             self.send_response(500)
@@ -1147,6 +1368,7 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
 
     def _get_image_progress(self):
         """Poll endpoint for image generation progress."""
+        _cleanup_old_image_jobs()
         query = parse_qs(urlparse(self.path).query)
         job_id = query.get("job_id", [None])[0]
         if not job_id:
@@ -1302,8 +1524,12 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
                                             exc_info=True,
                                         )
                                         return
-                            except:
-                                pass
+                            except (ValueError, KeyError, TypeError) as parse_err:
+                                _log_event(
+                                    logging.WARNING,
+                                    f"Dropped malformed llama.cpp SSE chunk: {parse_err}",
+                                    request_context=request_context,
+                                )
                 else:
                     try:
                         self.wfile.write(chunk)
@@ -1330,7 +1556,7 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 self.wfile.write(e.read())
-            except:
+            except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
 
         except urllib.error.URLError as e:
@@ -1383,9 +1609,16 @@ def open_browser_delayed():
     webbrowser.open(f"http://localhost:{CHAT_SERVER_PORT}")
 
 def main():
+    global AUTH_TOKEN
     ensure_data_dir()
     _set_active_log_mode(_load_settings_file().get("logMode"))
-    
+
+    # LAN access token. Allow opt-out via env var for legacy behavior.
+    if os.environ.get("R_AI_DISABLE_AUTH") == "1" or "--no-auth" in sys.argv:
+        AUTH_TOKEN = None
+    else:
+        AUTH_TOKEN = _load_or_create_token()
+
     # Try to find the local LAN IP
     local_ip = "127.0.0.1"
     try:
@@ -1397,13 +1630,21 @@ def main():
     except Exception:
         pass
 
+    lan_url = f"http://{local_ip}:{CHAT_SERVER_PORT}"
+    if AUTH_TOKEN:
+        lan_url = f"{lan_url}/?t={AUTH_TOKEN}"
+
     print()
     print("=" * 55)
     print("  Portable AI — Chat Server")
     print("=" * 55)
     print()
     print(f"  Local Access:    http://localhost:{CHAT_SERVER_PORT}")
-    print(f"  Network Access:  http://{local_ip}:{CHAT_SERVER_PORT}   <-- Use this on phone/other PC!")
+    print(f"  Network Access:  {lan_url}")
+    if AUTH_TOKEN:
+        print("                   ^ open this once on your phone; the token sticks via cookie.")
+    else:
+        print("  WARNING: LAN auth disabled — anyone on this network can use your AI.")
     print(f"  Ollama/Llama Proxy: {OLLAMA_HOST}")
     if LLAMA_CPP_MODE:
         print("  Running in LLAMA_CPP_MODE (Translating API requests)")

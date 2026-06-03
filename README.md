@@ -1,143 +1,206 @@
 # R-AI
 
-**R-AI** is a fully air-gapped, zero-dependency, plug-and-play local AI environment designed to run seamlessly from your **local hard drive** or a **portable USB/SSD**. It bypasses complex installations — natively executing large language models directly on your hardware with no internet required.
+**R-AI** is an air-gapped, zero-dependency local AI runtime that runs from a portable USB/SSD or an internal drive. It bundles isolated engine binaries, a portable Python interpreter, and a single-file web UI so models execute natively on your hardware with no installation, package manager, or internet connection required after first setup.
 
-With a unified architecture, you can initialize your AI models once and choose to keep them on your system or carry them with you across Windows, macOS, Linux, and Android.
-
-## Core Features
-
-* **Zero Dependency Setup:** Ships with portable Python and isolated engine binaries. No system permissions, registry edits, or package managers required.
-* **Cross-Platform:** Uses an intelligent `Shared` volume system — download your 5GB+ AI models *once*, and use them natively on Windows, macOS, Linux, and Android without duplication.
-* **Fully Offline:** Runs completely air-gapped after initial setup. Your data never leaves your machine.
-* **Network Proxied UI:** The custom Python HTTP server serves a blazing-fast dark mode chat UI. Access the AI from your phone or tablet on the same WiFi — no CORS headaches.
-* **Hardware Accelerated:** Natively capitalizes on AVX CPU instructions, NVIDIA CUDA, or Apple Metal GPU accelerators dynamically when plugged into different host machines.
+A unified `Shared/` volume lets you download a model once and use it across Windows, macOS, Linux, and Android.
 
 ---
 
-## System Requirements
+## Highlights
 
-- **Storage:** USB 3.0+ flash drive or SSD with at least **8 GB** free (16 GB recommended).
-- **RAM:** At least **8 GB** for 2B/4B models, **16 GB** for 9B/12B models.
+- **Zero dependency.** Portable Python and isolated engine binaries — no system Python, no package manager, no registry edits.
+- **Cross-platform.** One `Shared/` directory feeds Windows, macOS, Linux, and Android installs; ~5 GB models are downloaded once.
+- **Fully offline.** Air-gapped after initial setup. Vendor UI assets (markdown, syntax highlighting, fonts, PDF.js) are mirrored locally.
+- **LAN access with auth.** A per-install access token guards the server; loopback is exempt so the local browser launches without prompts.
+- **Hardware accelerated.** AVX, NVIDIA CUDA, and Apple Metal are picked up automatically when present.
 
 ---
 
-## Folder Architecture
+## Requirements
 
-```text
-[R-AI Drive]
- ├── 📁 Android    # Native Android (Termux) installers & launchers
- ├── 📁 Linux      # Native Ubuntu/Debian offline installers & launchers
- ├── 📁 Mac        # Native macOS offline installers & launchers
- ├── 📁 Windows    # Native Windows offline automatic UI menus
- └── 📁 Shared     # Unified Data System
-      ├── 📁 bin         (Isolated executables: ollama-windows.exe, ollama-darwin...)
-      ├── 📁 chat_data   (Cross-platform persistent conversation history)
-      ├── 📁 models      (HuggingFace GGUF weights & local database mapping)
-      └── 📁 python      (Isolated portable python environment)
+| Resource | Minimum | Recommended |
+|---|---|---|
+| Storage | USB 3.0 / SSD, 8 GB free | 16 GB+ |
+| RAM | 8 GB (2B/4B models) | 16 GB+ (9B/12B models) |
+| OS | Windows 10+, macOS 12+, Ubuntu/Debian, Termux/Android | — |
+
+---
+
+## Repository layout
+
+```
+R-AI/
+├── Android/                  # Termux installer + launcher
+├── Linux/                    # Linux installer + launcher
+├── Mac/                      # macOS installer + launcher
+├── Windows/                  # Windows installer + launcher
+├── Shared/                   # Cross-platform runtime
+│   ├── chat_server.py        # Zero-dep HTTP server (UI + chat storage + Ollama/llama.cpp proxy)
+│   ├── FastChatUI.html       # Built UI artifact (do not edit by hand; see ui-src/)
+│   ├── ui-src/               # UI source split into template + CSS + JS
+│   │   ├── template.html
+│   │   ├── styles/{fonts.css, main.css}
+│   │   └── app.js
+│   ├── config/               # Single source of truth for model catalogue + vendor assets
+│   │   ├── models.json
+│   │   └── ui-vendor-assets.json
+│   ├── scripts/
+│   │   ├── build-ui.py            # Concatenates ui-src/* → FastChatUI.html
+│   │   ├── install-common.sh      # Shared bash helpers for Linux + Mac installers
+│   │   ├── config_query.py        # Emits shell-quoted model vars from models.json
+│   │   ├── download-ui-assets.{sh,ps1}
+│   │   └── uninstall-common.sh
+│   ├── bin/                  # (runtime) Engine binaries: ollama, llama-server, sd
+│   ├── models/               # (runtime) GGUF weights + Ollama Modelfiles
+│   ├── vendor/               # (runtime) Mirrored marked.js, highlight.js, PDF.js, fonts
+│   ├── chat_data/            # (runtime) Per-chat JSON store, settings, access token
+│   └── logs/                 # (runtime) Server logs
+└── tests/                    # stdlib unittest smoke tests (no external deps)
 ```
 
+Runtime directories (`bin/`, `models/`, `vendor/`, `chat_data/`, `logs/`) are `.gitignore`d.
+
 ---
 
-## AI Model Library
+## Quick start
 
-Curated installer for high-quality, locally operable models:
+### 1. Install the engine and download models
+
+| OS | Command |
+|---|---|
+| Windows | Double-click `Windows/install.bat` |
+| macOS | `bash Mac/install.command` (or drag into Terminal) |
+| Linux | `bash Linux/install.sh` |
+| Android (Termux) | `bash Android/install.sh` |
+
+Installers pull the engine binary (~50 MB), download selected GGUF models, write Ollama `Modelfile` entries, and import them.
+
+### 2. Launch
+
+| OS | Command |
+|---|---|
+| Windows | `Windows/start-fast-chat.bat` |
+| macOS | `bash Mac/start.command` |
+| Linux | `bash Linux/start.sh` |
+| Android | `bash Android/start.sh` |
+
+The server starts on `http://localhost:3333`, your browser opens automatically, and chat history persists under `Shared/chat_data/`.
+
+---
+
+## LAN access
+
+The server binds to `0.0.0.0:3333` so you can use it from a phone or another machine on the same network. Access is gated by a per-install token to keep the model and chat history off untrusted devices.
+
+- The token is generated on first launch and stored at `Shared/chat_data/.access_token` (not committed).
+- The startup banner prints the LAN URL with the token baked in:
+  ```
+  Network Access:  http://192.168.1.15:3333/?t=8x...Z9
+  ```
+- Open that URL once on the remote device; the server validates the token, sets an HttpOnly cookie, and redirects to `/`. Subsequent visits work without the query string.
+- Loopback clients (`127.0.0.1`, `::1`) are always exempt, so the auto-launched browser is unaffected.
+- Tokens can also be sent via `X-Auth-Token: <token>` or `Authorization: Bearer <token>`.
+
+To disable auth (legacy behaviour, **not recommended on shared networks**):
+
+```bash
+R_AI_DISABLE_AUTH=1 python Shared/chat_server.py
+# or
+python Shared/chat_server.py --no-auth
+```
+
+If LAN pages don't load at all, confirm port `3333` is allowed through the host firewall.
+
+---
+
+## Models
+
+The model catalogue lives in [`Shared/config/models.json`](Shared/config/models.json) and is consumed identically by every installer via `Shared/scripts/config_query.py`. Adding a model means editing one JSON file — no shell-script duplication.
 
 | Model | Size | Notes |
 |---|---|---|
-| **Gemma 2 2B Abliterated** | ~1.6 GB | Fast, smart for its size. Great starting point. |
-| **Gemma 4 E4B Ultra** | ~5.34 GB | Aggressively compliant fine-tune. |
-| **Qwen 3.5 9B** | ~5.2 GB | Large reasoning model, raw unbiased answers. |
-| **Custom .gguf** | Varies | Download any GGUF weight from HuggingFace directly. |
+| Gemma 2 2B (abliterated) | ~1.6 GB | Default recommendation. Fast, capable, low RAM. |
+| Gemma 4 E4B Ultra Heretic | ~5.3 GB | Aggressively compliant fine-tune. |
+| Qwen 3.5 9B Uncensored | ~5.2 GB | Large reasoning model. |
+| NemoMix Unleashed 12B | ~7.0 GB | Heavyweight; needs 16 GB+ RAM. |
+| Dolphin 2.9 Llama-3 8B | ~4.9 GB | General-purpose uncensored fine-tune. |
+| Phi-3.5 Mini 3.8B | ~2.2 GB | Lightweight standard model. |
+| CyberRealistic v3.3 (SD 1.5) | ~2.0 GB | Image model used by the SD engine. |
+| **Custom GGUF** | varies | Paste any HuggingFace `.gguf` URL during install. |
+
+Android installs use a slimmer catalogue tuned for phone RAM (Gemma 2 2B, SmolLM2 1.7B, Qwen 2.5 1.5B, Phi 3.5 Mini).
 
 ---
 
-## Quick Start
+## Architecture
 
-### Step 1: Initialize the Engine
+**Desktop (Windows / Linux / macOS).** Ollama serves models on `127.0.0.1:11434`. The Python server proxies `/ollama/*` to it, eliminating CORS handling on the UI side and presenting a single port to LAN clients.
 
-Run the install script for your OS:
+**Android.** llama.cpp is compiled natively in Termux (the engine binary is not shipped — the install script clones `ggerganov/llama.cpp`, builds `llama-server` with CMake/Ninja, and pins it to `Shared/bin/llama-server-android`). The server runs in `--llama-cpp` mode and bridges OpenAI-style SSE responses back to the Ollama JSONL contract the UI expects.
 
-| OS | Command |
-|---|---|
-| **Windows** | Double-click `Windows/install.bat` |
-| **macOS** | Open Terminal -> drag `Mac/install.command` -> Enter |
-| **Linux** | `bash Linux/install.sh` |
-| **Android** | Open Termux -> `bash Android/install.sh` |
+**Image generation.** Optional `stable-diffusion.cpp` binary (`Shared/bin/sd-{windows,linux,mac}/sd`). The server enforces that Ollama is stopped before generating images so the RAM budget is exclusive; jobs are tracked in-process with progress polling at `/api/image-progress`.
 
-> **Note:** This just downloads the tiny ~50MB execution engine for your OS to the `Shared/bin` folder.
-
-### Step 2: Download AI Models
-
-Recommended via **Windows** (`Windows/install.bat`) for the interactive model catalog.
-Otherwise, manually drop `.gguf` files into `Shared/models`.
-
-### Step 3: Launch
-
-| OS | Command |
-|---|---|
-| **Windows** | `Windows/start-fast-chat.bat` |
-| **macOS** | `Mac/start.command` |
-| **Linux** | `bash Linux/start.sh` |
-| **Android** | `bash Android/start.sh` |
-
-The engine spins up and your browser opens the locally-served Chat UI.
+**Chat persistence.** Chats are stored one file per conversation under `Shared/chat_data/chats/<id>.json`, with an `_index.json` keeping per-chat content hashes. Saves diff against the index and only rewrite changed files. A one-shot migration converts any legacy `chat_data/chats.json` on first run.
 
 ---
 
-## Local Disk Installation
+## Developing
 
-Works beautifully as a lightweight local AI setup too:
+### UI
 
-1. Clone this repo to any folder on your drive.
-2. Navigate to your OS folder (Windows/Mac/Linux).
-3. Run the install script and choose your models.
-4. Run the start script.
+The UI ships as a single HTML file (`Shared/FastChatUI.html`) so the runtime stays zero-build for end users. Source lives in `Shared/ui-src/` and is concatenated by a small build script:
 
-Running from an internal SSD is significantly faster than USB — near-instant model loading.
-
----
-
-## Android (Termux)
-
-Run AI **directly on your phone** — no PC required.
-
-**Requirements:**
-- Termux from F-Droid (not Play Store)
-- 6 GB+ RAM (8 GB+ recommended)
-- WiFi/data for initial setup only
-- ARM64 processor
-
-**Setup:**
 ```bash
-# Copy R-AI to your device, then in Termux:
-bash Android/install.sh
-# Select your model (Gemma 2 2B recommended)
+python Shared/scripts/build-ui.py            # writes Shared/FastChatUI.html
+python Shared/scripts/build-ui.py --check    # prints sha256 without writing
 ```
 
-**Launch:**
+The template (`ui-src/template.html`) holds the page shell with `{{INCLUDE: relative/path}}` markers in place of the `<style>` and `<script>` bodies. The build is byte-deterministic and a test verifies it round-trips against the checked-in HTML.
+
+### Installers
+
+`Shared/scripts/install-common.sh` is the shared bash library used by `Linux/install.sh` and `Mac/install.command`. Helpers in the library:
+
+- platform-aware `stat_size`, `free_gb`, `is_native_binary`
+- model catalogue loader (`load_model_catalogue`)
+- interactive menu and selection parsing (`print_model_menu`, `parse_model_selection`)
+- drive-root pre-fill scan (`copy_from_drive_root`)
+- download loop with retries (`run_model_downloads`)
+- `Modelfile` writer and Ollama import (`create_modelfiles_and_list`, `import_models_into_ollama`)
+
+Linux and Mac installers carry only platform-specific bits: engine archive URL, extract command, and (on macOS) `xattr -d com.apple.quarantine`.
+
+### Tests
+
 ```bash
-bash Android/start.sh
+python -m unittest discover -s tests
 ```
 
-**Tips:**
-- Run `termux-wake-lock` first to prevent Android from killing the process
-- Keep Termux in foreground for best performance
-- Close other apps to free RAM
-- Use the 2B model on devices under 12 GB RAM
-- Plug in charger — LLM inference drains battery
-- Expect ~3-10 tokens/sec on 2B (vs 30-50+ on PC with GPU)
+The suite is stdlib-only and covers token lifecycle, chat round-trip, incremental save behaviour, legacy migration, chat-id sanitisation, and the UI build round-trip.
 
 ---
 
-## LAN Mobile Access
+## Local-disk install
 
-Use your PC's AI from your phone on the couch:
+Identical to the portable workflow, just with the repo cloned to an internal drive:
 
-1. PC running the start script + phone on same WiFi.
-2. Terminal shows a **Network Access** IP (e.g., `http://192.168.1.15:3333`).
-3. Open that URL on your phone browser.
+```bash
+git clone https://github.com/rajendra7169/R-AI.git
+cd R-AI
+# Then run the installer for your OS as above.
+```
 
-> If pages don't load, check that Windows Firewall allows port `3333`.
+Running from an internal SSD is markedly faster than USB — near-instant model loading.
+
+---
+
+## Android (Termux) notes
+
+- Install Termux from F-Droid (the Play Store build is outdated).
+- Run `termux-setup-storage` once (the installer does this).
+- Run `termux-wake-lock` before launch to keep the server alive in background.
+- Use the 2B model on devices under 12 GB RAM; expect 3–10 tok/s vs 30–50+ on a desktop GPU.
+- Plug in the charger — LLM inference is power-hungry.
 
 ---
 
@@ -145,16 +208,14 @@ Use your PC's AI from your phone on the couch:
 
 | Problem | Fix |
 |---|---|
-| Script closes instantly (Windows) | Windows App Execution Aliases conflict. Run via cmd or as Admin. |
-| "Engine Not Found" | Run the install script before the start script. |
-| Slow generation | Model too large for your RAM. Use the Gemma 2 2B model. |
+| `start-fast-chat.bat` closes instantly on Windows | Windows App Execution Aliases for `python` are intercepting. Disable them under Settings → Apps → Advanced app settings → App execution aliases, or run via `cmd`. |
+| `Engine Not Found` | The install script hasn't been run yet, or `Shared/bin/` was excluded by sync software. |
+| Phone gets `401 Access token required` | Open the LAN URL printed at startup *with* the `?t=…` suffix once; the cookie is set after that. |
+| LAN access works on PC but not on phone | Host firewall is blocking port 3333. Allow it inbound. |
+| Generation is very slow | Model is too large for available RAM. Switch to Gemma 2 2B. |
 
 ---
 
 ## License
 
 MIT
-
----
-
-> *R-AI — your AI, your hardware, zero cloud.*

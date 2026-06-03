@@ -1,0 +1,75 @@
+      /* ── Local fonts (installed by platform installer) ─────── */
+      @font-face {
+        font-family: 'Inter';
+        src: url('./vendor/Inter-Regular.woff2') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Inter';
+        src: url('./vendor/Inter-Medium.woff2') format('woff2');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Inter';
+        src: url('./vendor/Inter-SemiBold.woff2') format('woff2');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Inter';
+        src: url('./vendor/Inter-Bold.woff2') format('woff2');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('./vendor/JetBrainsMono-Regular.woff2') format('woff2');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('./vendor/JetBrainsMono-Medium.woff2') format('woff2');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      /* Override Font Awesome font paths to use local vendor files */
+      @font-face {
+        font-family: 'Font Awesome 6 Free';
+        font-style: normal;
+        font-weight: 900;
+        font-display: block;
+        src: url('./vendor/fa-solid-900.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Font Awesome 6 Free';
+        font-style: normal;
+        font-weight: 400;
+        font-display: block;
+        src: url('./vendor/fa-regular-400.woff2') format('woff2');
+      }
+      /* Tailwind responsive utilities (minimal subset used by this file) */
+      .hidden {
+        display: none !important;
+      }
+      @media (min-width: 640px) {
+        .sm\:inline {
+          display: inline !important;
+        }
+      }
+      @media (min-width: 768px) {
+        .md\:flex {
+          display: flex !important;
+        }
+        .md\:hidden {
+          display: none !important;
+        }
+      }
