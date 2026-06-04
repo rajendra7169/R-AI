@@ -295,6 +295,37 @@
           // Reset image UI when leaving image mode
           D.imgProgress.style.display = 'none';
           D.imgResult.style.display = 'none';
+          // If Ollama was unloaded for image generation, quietly bring it
+          // back when the user returns to chat so the next message doesn't
+          // hit a 502.
+          ensureChatEngineRunning();
+        }
+      }
+
+      // Quietly start Ollama if it's not running. Refreshes the model list
+      // when it comes back up. Safe to call repeatedly.
+      let _engineStartInflight = false;
+      async function ensureChatEngineRunning() {
+        if (_engineStartInflight) return;
+        try {
+          const r = await fetch('/api/engine-status');
+          const d = await r.json();
+          if (d && d.ollama) return; // already up
+        } catch { return; }
+        _engineStartInflight = true;
+        try {
+          toast('Restarting chat engine…');
+          await fetch('/api/start-ollama', { method: 'POST' });
+          const ok = await waitForEngineState(true);
+          if (ok) {
+            toast('Chat engine ready.');
+            // Repopulate the model dropdown that earlier showed "Engine Offline".
+            try { await fetchModels(); } catch {}
+          }
+        } catch {
+          /* silent — UI will still show Engine Offline until the user retries */
+        } finally {
+          _engineStartInflight = false;
         }
       }
 
