@@ -2233,3 +2233,33 @@
         opacity: 0.85;
         line-height: 1.5;
       }
+
+      /* Brain toggle next to the temperature control */
+      .think-tog {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--bd);
+        background: var(--bg2);
+        color: var(--t3);
+        font-family: var(--font);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .think-tog:hover {
+        background: var(--bgh);
+        color: var(--t1);
+        border-color: var(--bd2);
+      }
+      .think-tog.on {
+        background: rgba(145, 100, 255, 0.15);
+        color: var(--purple, #9164ff);
+        border-color: rgba(145, 100, 255, 0.4);
+      }
+      .think-tog i {
+        font-size: 12px;
+      }

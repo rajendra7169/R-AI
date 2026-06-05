@@ -125,16 +125,20 @@ class ServerClient:
         except Exception:
             return []
 
-    def stream_chat(self, model: str, messages: list[dict], temperature: float, on_token):
+    def stream_chat(self, model: str, messages: list[dict], temperature: float, on_token, think: bool = False):
         """POST /ollama/api/chat and feed each streamed token chunk to on_token.
 
         Returns the assembled text. Raises on network/HTTP errors so the
-        caller can decide how to surface them.
+        caller can decide how to surface them. Set think=True to let
+        reasoning models (Qwen 3.x / DeepSeek-style) produce their internal
+        chain-of-thought; default off because on weaker hardware that phase
+        can burn the entire token budget before any visible reply.
         """
         payload = {
             "model": model,
             "messages": messages,
             "stream": True,
+            "think": bool(think),
             "options": {"temperature": float(temperature)},
         }
         body = json.dumps(payload).encode("utf-8")
@@ -287,6 +291,7 @@ COMMANDS_HELP = """
     /system <text>        Set system instructions for this chat
     /system               Show / clear the current system instructions
     /temp <0.0-2.0>       Set sampling temperature
+    /think                Toggle reasoning trace (slower, for Qwen 3.x etc.)
     /new   |  /clear      Start a fresh conversation
     /quit  |  /exit       Leave R-AI Terminal
 """
@@ -394,6 +399,10 @@ def _handle_command(line: str, state: dict, client: ServerClient) -> bool:
                 print(f"  {C.ORANGE}Temperature must be between 0.0 and 2.0.{C.RESET}")
         except ValueError:
             print(f"  {C.ORANGE}Usage: /temp 0.7{C.RESET}")
+    elif cmd == "/think":
+        state["think"] = not state.get("think", False)
+        msg = "on (model will reason before replying)" if state["think"] else "off (faster)"
+        print(f"  {C.GREEN}Reasoning: {msg}.{C.RESET}")
     elif cmd in ("/new", "/clear"):
         sys_msg = next((m for m in state["messages"] if m["role"] == "system"), None)
         state["messages"] = [sys_msg] if sys_msg else []
@@ -420,6 +429,7 @@ def _stream_response(client: ServerClient, state: dict) -> str:
             messages=state["messages"],
             temperature=state["temp"],
             on_token=on_token,
+            think=state.get("think", False),
         )
     except urllib.error.HTTPError as e:
         sys.stdout.write(f"\n  {C.RED}HTTP {e.code}: {e.reason}{C.RESET}\n")
@@ -446,6 +456,7 @@ def repl(client: ServerClient, initial_model: str) -> None:
         "temp": DEFAULT_TEMP,
         "system": "",
         "messages": [],
+        "think": False,
     }
     while True:
         try:

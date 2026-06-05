@@ -997,6 +997,14 @@
         });
 
         try {
+          // Default: ask Ollama to skip the model's internal <think>...</think>
+          // reasoning phase. Reasoning models (Qwen 3.x / DeepSeek-style) can
+          // otherwise burn many seconds — and on weaker hardware, all of the
+          // token budget — on internal monologue before producing the actual
+          // reply. The user can re-enable it via the brain toggle next to the
+          // temperature input.
+          const thinkOn =
+            localStorage.getItem('g-think') === '1';
           const res = await fetch(OLLAMA + '/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1004,6 +1012,7 @@
               model: conv.model,
               messages: apiMsgs,
               stream: true,
+              think: thinkOn,
               options: {
                 temperature:
                   parseFloat(document.getElementById('temp-input')?.value) ||
@@ -1385,6 +1394,26 @@
             if (p) sendMsg(p);
           }),
         );
+
+      // Brain (Think) toggle
+      (function bindThinkToggle() {
+        const btn = document.getElementById('think-tog');
+        if (!btn) return;
+        const apply = () => {
+          const on = localStorage.getItem('g-think') === '1';
+          btn.classList.toggle('on', on);
+          btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+          btn.title = on
+            ? 'Reasoning: on (slower, model thinks before replying). Click to disable.'
+            : 'Reasoning: off (faster). Click to enable extended thinking on reasoning models.';
+        };
+        apply();
+        btn.addEventListener('click', () => {
+          const on = localStorage.getItem('g-think') === '1';
+          localStorage.setItem('g-think', on ? '0' : '1');
+          apply();
+        });
+      })();
 
       // Panel toggles
       const openSysPanel = () => {
