@@ -1042,23 +1042,32 @@
           const dec = new TextDecoder();
           if (contentEl) contentEl.innerHTML = '';
 
-          // While streaming, the bubble has two areas: an animated
-          // "Thinking…" pill that shows reasoning live, plus a content
-          // area that fills once the model emits real tokens. Tracking
-          // refs so we don't re-build the DOM on every chunk.
-          let thinkLive = null;   // live-reasoning pill element
-          let contentBody = null; // real content target
+          // While streaming, the bubble holds a live <details> for thinking
+          // (so the user can click to expand it mid-stream and watch the
+          // full trace fill in) plus a content area for the real reply.
+          let thinkSummary = null;  // live "Thinking..." label inside <summary>
+          let thinkBody = null;     // expandable trace body
+          let contentBody = null;   // real content target
           let contentStarted = false;
           const ensureLiveShells = () => {
             if (!contentEl) return;
-            if (!thinkLive && aiMsg.thinking) {
+            if (!thinkBody && aiMsg.thinking) {
               contentEl.innerHTML =
-                '<div class="think-live"><span class="think-spin"></span>' +
-                '<span class="think-label">Thinking</span>' +
-                '<span class="think-stream"></span></div>' +
+                '<details class="think-block live" open>' +
+                  '<summary>' +
+                    '<span class="think-spin"></span>' +
+                    '<span class="think-label">Thinking</span>' +
+                    '<span class="think-meta" data-role="chars">0 chars</span>' +
+                  '</summary>' +
+                  '<div class="think-body" data-role="body"></div>' +
+                '</details>' +
                 '<div class="think-content"></div>';
-              thinkLive = contentEl.querySelector('.think-stream');
+              const detEl = contentEl.querySelector('.think-block');
+              thinkSummary = detEl.querySelector('[data-role="chars"]');
+              thinkBody = detEl.querySelector('[data-role="body"]');
               contentBody = contentEl.querySelector('.think-content');
+              // Collapse the live trace once the user explicitly closes it;
+              // until then keep auto-scrolling to the newest text.
             } else if (!contentBody) {
               contentEl.innerHTML = '<div class="think-content"></div>';
               contentBody = contentEl.querySelector('.think-content');
@@ -1076,16 +1085,25 @@
                 if (p.message?.thinking) {
                   aiMsg.thinking = (aiMsg.thinking || '') + p.message.thinking;
                   ensureLiveShells();
-                  if (thinkLive) {
-                    thinkLive.textContent = aiMsg.thinking.slice(-180);
+                  if (thinkSummary) {
+                    thinkSummary.textContent = aiMsg.thinking.length + ' chars';
+                  }
+                  if (thinkBody) {
+                    thinkBody.textContent = aiMsg.thinking;
+                    // Auto-scroll the trace body so the newest tokens are in view
+                    thinkBody.scrollTop = thinkBody.scrollHeight;
                   }
                 }
                 if (p.message?.content) {
                   aiMsg.content += p.message.content;
                   ensureLiveShells();
                   if (!contentStarted && contentEl) {
-                    const pill = contentEl.querySelector('.think-live');
-                    if (pill) pill.classList.add('done');
+                    const det = contentEl.querySelector('.think-block.live');
+                    if (det) {
+                      det.classList.remove('live');
+                      det.classList.add('done');
+                      det.removeAttribute('open'); // auto-collapse when answer starts
+                    }
                     contentStarted = true;
                   }
                   if (contentBody) contentBody.textContent = aiMsg.content;

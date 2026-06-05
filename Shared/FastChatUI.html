@@ -2305,72 +2305,11 @@
 
       /* ── Reasoning trace ──────────────────────────────────────
          Reasoning models (Qwen 3.x / DeepSeek-style) put their internal
-         <think>...</think> output into message.thinking. While the model is
-         actively reasoning we show an animated "Thinking…" pill with the
-         latest reasoning text scrolling alongside; once content starts (or
-         the stream ends) the pill collapses into a compact details block. */
-
-      /* Live "Thinking…" pill that streams reasoning in real-time */
-      .think-live {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(145, 100, 255, 0.08);
-        border: 1px solid rgba(145, 100, 255, 0.28);
-        border-radius: 999px;
-        padding: 5px 12px;
-        margin-bottom: 10px;
-        font-size: 12px;
-        color: var(--purple, #9164ff);
-        max-width: 100%;
-        overflow: hidden;
-        transition: opacity 0.3s ease;
-      }
-      .think-live.done {
-        opacity: 0.45;
-        background: rgba(145, 100, 255, 0.04);
-      }
-      .think-spin {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--purple, #9164ff);
-        box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5);
-        animation: thinkPulse 1.4s ease-in-out infinite;
-        flex-shrink: 0;
-      }
-      .think-live.done .think-spin {
-        animation: none;
-        opacity: 0.4;
-      }
-      @keyframes thinkPulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5); }
-        50%      { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(145, 100, 255, 0); }
-      }
-      .think-label {
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        flex-shrink: 0;
-      }
-      .think-stream {
-        color: var(--t3);
-        font-style: italic;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex: 1;
-        min-width: 0;
-        font-size: 11.5px;
-        direction: rtl;       /* keep the newest tokens visible */
-        text-align: left;
-      }
-      .think-content {
-        /* container for streaming content so it sits below the pill */
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-
-      /* Final collapsed block (post-stream and on history replay) */
+         <think>...</think> output into message.thinking. We render it as
+         an expandable <details> block. While streaming it carries the
+         `live` class for the pulsing-dot animation; once the model starts
+         producing real content (or the stream ends) the class swaps to
+         `done` and the block auto-collapses but remains clickable. */
       .think-block {
         background: rgba(145, 100, 255, 0.05);
         border: 1px solid rgba(145, 100, 255, 0.22);
@@ -2379,6 +2318,14 @@
         margin-bottom: 10px;
         font-size: 12px;
         color: var(--t2);
+        transition: background 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+      }
+      .think-block.live {
+        background: rgba(145, 100, 255, 0.09);
+        border-color: rgba(145, 100, 255, 0.36);
+      }
+      .think-block.done {
+        opacity: 0.85;
       }
       .think-block summary {
         cursor: pointer;
@@ -2394,12 +2341,36 @@
       .think-block summary::-webkit-details-marker {
         display: none;
       }
+      /* Static dot for done/history state */
       .think-dot {
         width: 6px;
         height: 6px;
         border-radius: 50%;
         background: var(--purple, #9164ff);
         opacity: 0.6;
+        flex-shrink: 0;
+      }
+      /* Pulsing dot for live state */
+      .think-spin {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--purple, #9164ff);
+        box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5);
+        animation: thinkPulse 1.4s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      .think-block.done .think-spin {
+        animation: none;
+        opacity: 0.5;
+      }
+      @keyframes thinkPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5); }
+        50%      { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(145, 100, 255, 0); }
+      }
+      .think-label {
+        font-weight: 600;
+        letter-spacing: 0.02em;
         flex-shrink: 0;
       }
       .think-meta {
@@ -2421,6 +2392,11 @@
         max-height: 320px;
         overflow-y: auto;
         padding-right: 6px;
+      }
+      .think-content {
+        /* container for the real answer below the thinking block */
+        white-space: pre-wrap;
+        word-wrap: break-word;
       }
 
       /* Brain toggle next to the temperature control */
@@ -3960,23 +3936,32 @@
           const dec = new TextDecoder();
           if (contentEl) contentEl.innerHTML = '';
 
-          // While streaming, the bubble has two areas: an animated
-          // "Thinking…" pill that shows reasoning live, plus a content
-          // area that fills once the model emits real tokens. Tracking
-          // refs so we don't re-build the DOM on every chunk.
-          let thinkLive = null;   // live-reasoning pill element
-          let contentBody = null; // real content target
+          // While streaming, the bubble holds a live <details> for thinking
+          // (so the user can click to expand it mid-stream and watch the
+          // full trace fill in) plus a content area for the real reply.
+          let thinkSummary = null;  // live "Thinking..." label inside <summary>
+          let thinkBody = null;     // expandable trace body
+          let contentBody = null;   // real content target
           let contentStarted = false;
           const ensureLiveShells = () => {
             if (!contentEl) return;
-            if (!thinkLive && aiMsg.thinking) {
+            if (!thinkBody && aiMsg.thinking) {
               contentEl.innerHTML =
-                '<div class="think-live"><span class="think-spin"></span>' +
-                '<span class="think-label">Thinking</span>' +
-                '<span class="think-stream"></span></div>' +
+                '<details class="think-block live" open>' +
+                  '<summary>' +
+                    '<span class="think-spin"></span>' +
+                    '<span class="think-label">Thinking</span>' +
+                    '<span class="think-meta" data-role="chars">0 chars</span>' +
+                  '</summary>' +
+                  '<div class="think-body" data-role="body"></div>' +
+                '</details>' +
                 '<div class="think-content"></div>';
-              thinkLive = contentEl.querySelector('.think-stream');
+              const detEl = contentEl.querySelector('.think-block');
+              thinkSummary = detEl.querySelector('[data-role="chars"]');
+              thinkBody = detEl.querySelector('[data-role="body"]');
               contentBody = contentEl.querySelector('.think-content');
+              // Collapse the live trace once the user explicitly closes it;
+              // until then keep auto-scrolling to the newest text.
             } else if (!contentBody) {
               contentEl.innerHTML = '<div class="think-content"></div>';
               contentBody = contentEl.querySelector('.think-content');
@@ -3994,16 +3979,25 @@
                 if (p.message?.thinking) {
                   aiMsg.thinking = (aiMsg.thinking || '') + p.message.thinking;
                   ensureLiveShells();
-                  if (thinkLive) {
-                    thinkLive.textContent = aiMsg.thinking.slice(-180);
+                  if (thinkSummary) {
+                    thinkSummary.textContent = aiMsg.thinking.length + ' chars';
+                  }
+                  if (thinkBody) {
+                    thinkBody.textContent = aiMsg.thinking;
+                    // Auto-scroll the trace body so the newest tokens are in view
+                    thinkBody.scrollTop = thinkBody.scrollHeight;
                   }
                 }
                 if (p.message?.content) {
                   aiMsg.content += p.message.content;
                   ensureLiveShells();
                   if (!contentStarted && contentEl) {
-                    const pill = contentEl.querySelector('.think-live');
-                    if (pill) pill.classList.add('done');
+                    const det = contentEl.querySelector('.think-block.live');
+                    if (det) {
+                      det.classList.remove('live');
+                      det.classList.add('done');
+                      det.removeAttribute('open'); // auto-collapse when answer starts
+                    }
                     contentStarted = true;
                   }
                   if (contentBody) contentBody.textContent = aiMsg.content;
