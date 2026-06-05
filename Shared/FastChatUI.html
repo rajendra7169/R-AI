@@ -967,12 +967,30 @@
         }
       }
 
-      /* Gemini-style animated logo mark */
+      /* Global safety cap for the R-AI logo image so it can never blow
+         past its container regardless of cascade. Specific placements
+         (sidebar brand icon, welcome ring, model picker rows, assistant
+         avatar, image-studio header) override this with their own
+         dimensions; this rule is only the floor. */
+      img.r-ai-logo {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      /* Gemini-style animated logo mark. The !important here is defensive:
+         in a recent session the welcome ring was rendering at hundreds of
+         pixels instead of 60×60 for unclear cascade reasons; pinning the
+         dimensions here makes it impossible to grow regardless of what
+         other CSS rules an editor or browser might inject. */
       .wl-wrap {
-        width: 60px;
-        height: 60px;
+        width: 60px !important;
+        height: 60px !important;
+        max-width: 60px !important;
+        max-height: 60px !important;
         margin-bottom: 18px;
         position: relative;
+        flex-shrink: 0;
       }
       .wl-ring {
         position: absolute;
