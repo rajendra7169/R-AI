@@ -6,10 +6,14 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Title is a single non-breaking space so the OS app-mode title bar
-         shows blank instead of "R-AI · Local Chat". The favicon is omitted
-         for the same reason — branding lives inside the UI itself. -->
-    <title> </title>
+    <!-- Goal: completely blank window title bar in Chromium --app mode.
+         A regular space gets trimmed → Edge falls back to showing the URL
+         (localhost:3333). A non-breaking space survives the trim and renders
+         as nothing. The favicon is a 1x1 transparent PNG (data URI) so the
+         OS title bar shows neither URL nor icon. -->
+    <title>&#xA0;</title>
+    <link rel="icon" type="image/png"
+          href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=" />
     <!-- Vendor assets (downloaded offline by platform installer) -->
     <link rel="stylesheet" href="./vendor/fa-all.min.css" />
     <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
