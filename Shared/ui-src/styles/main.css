@@ -157,11 +157,34 @@
         flex-direction: column;
         gap: 8px;
       }
+      .sb-brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 9px;
+        padding: 0 4px 8px;
+      }
       .sb-brand {
         display: flex;
         align-items: center;
         gap: 9px;
-        padding: 0 6px 8px;
+        flex: 1;
+        min-width: 0;
+      }
+      .sb-tog-inline {
+        background: none;
+        border: none;
+        color: var(--t3);
+        cursor: pointer;
+        font-size: 15px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        transition: background 0.15s, color 0.15s;
+        flex-shrink: 0;
+      }
+      .sb-tog-inline:hover {
+        background: var(--bgh);
+        color: var(--t1);
       }
       .sb-brand-icon {
         width: 32px;
@@ -352,6 +375,23 @@
         flex-shrink: 0;
         z-index: 10;
         min-height: 56px;
+        position: relative;
+      }
+      .tb-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .tb-center > * {
+        pointer-events: auto;
+      }
+      .instr-btn {
+        flex-shrink: 0;
       }
       .tb-btn {
         background: none;
@@ -415,15 +455,57 @@
         border-color: rgba(66, 133, 244, 0.35);
       }
 
-      /* HW Stats bar */
-      .hw-bar {
+      /* Collapsible HW stats: chip toggle + expanded bar */
+      .hw-wrap {
+        margin-left: auto;
         display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+      }
+      .hw-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg3);
+        border: 1px solid var(--bd);
+        color: var(--t2);
+        font-family: var(--font);
+        font-size: 11.5px;
+        padding: 5px 10px;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+      .hw-toggle:hover {
+        background: var(--bgh);
+        color: var(--t1);
+        border-color: var(--bd2);
+      }
+      .hw-toggle .hw-toggle-mini {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        font-size: 11px;
+      }
+      .hw-toggle .hw-chev {
+        font-size: 8px;
+        opacity: 0.7;
+        transition: transform 0.2s;
+      }
+      .hw-wrap.open .hw-toggle .hw-chev {
+        transform: rotate(180deg);
+      }
+      .hw-bar {
+        display: none;
         align-items: center;
         gap: 14px;
         background: var(--bg3);
         padding: 5px 12px;
         border-radius: var(--radius-pill);
         border: 1px solid var(--bd);
+      }
+      .hw-wrap.open .hw-bar {
+        display: flex;
       }
       .hw-stat {
         display: flex;

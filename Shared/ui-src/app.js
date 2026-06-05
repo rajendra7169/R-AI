@@ -149,7 +149,8 @@
           setBar('ram', d.ram_percent);
           const gpuStat = $('#gpu-stat');
           const vramStat = $('#vram-stat');
-          if (d.gpu_percent === null || d.gpu_percent === undefined) {
+          const hasGpu = d.gpu_percent !== null && d.gpu_percent !== undefined;
+          if (!hasGpu) {
             if (gpuStat) gpuStat.style.display = 'none';
             if (vramStat) vramStat.style.display = 'none';
           } else {
@@ -161,6 +162,14 @@
               const lbl = $('#gpu-label');
               if (lbl) lbl.title = d.gpu_name;
             }
+          }
+          // Update the collapsed chip label with the most relevant signal
+          const mini = $('#hw-toggle-mini');
+          if (mini) {
+            const top = hasGpu
+              ? `${Math.round(d.gpu_percent)}% GPU`
+              : `${Math.round(d.cpu_percent)}% CPU`;
+            mini.textContent = top;
           }
         } catch {}
       }
@@ -1440,6 +1449,26 @@
         });
         D.sbTog.addEventListener('click', () => toggleSB());
         D.ov.addEventListener('click', () => toggleSB(false));
+        // Sidebar-internal hamburger: closes the sidebar.
+        const sbTogInline = document.getElementById('sb-tog-inline');
+        if (sbTogInline) {
+          sbTogInline.addEventListener('click', () => toggleSB(false));
+        }
+
+        // Collapsible HW stats chip. Persist open/closed state.
+        const hwWrap = document.querySelector('.hw-wrap');
+        const hwToggle = document.getElementById('hw-toggle');
+        if (hwWrap && hwToggle) {
+          const setOpen = (open) => {
+            hwWrap.classList.toggle('open', open);
+            hwToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            try { localStorage.setItem('g-hw-open', open ? '1' : '0'); } catch (_) {}
+          };
+          setOpen(localStorage.getItem('g-hw-open') === '1');
+          hwToggle.addEventListener('click', () => {
+            setOpen(!hwWrap.classList.contains('open'));
+          });
+        }
         D.thTop.addEventListener('click', toggleTheme);
         D.thSb.addEventListener('click', toggleTheme);
         D.ca.addEventListener('click', () => {

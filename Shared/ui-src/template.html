@@ -8,20 +8,22 @@
     />
     <!-- Title shows next to the small favicon in the OS title bar and as
          the taskbar app name. -->
-    <title>your portable uncensored ai</title>
+    <title>YOUR PORTABLE UNCENSORED AI</title>
     <link rel="icon" type="image/png" href="./assets/r-ai-logo.png" />
-    <script>document.title = 'your portable uncensored ai';</script>
+    <script>
+      document.title = "your portable uncensored ai";
+    </script>
     <!-- Vendor assets (downloaded offline by platform installer) -->
     <link rel="stylesheet" href="./vendor/fa-all.min.css" />
     <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
     <script src="./vendor/marked.min.js"></script>
     <script src="./vendor/highlight.min.js"></script>
     <style>
-{{INCLUDE: styles/fonts.css}}
+      {{INCLUDE: styles/fonts.css}}
     </style>
 
     <style>
-{{INCLUDE: styles/main.css}}
+      {{INCLUDE: styles/main.css}}
     </style>
   </head>
   <body>
@@ -29,11 +31,21 @@
       <!-- ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ SIDEBAR ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ -->
       <aside id="sidebar" role="navigation" aria-label="Chat history">
         <div class="sb-hd">
-          <div class="sb-brand">
-            <div class="sb-brand-icon">
-              <img src="./assets/r-ai-logo.png" alt="R-AI" />
+          <div class="sb-brand-row">
+            <div class="sb-brand">
+              <div class="sb-brand-icon">
+                <img src="./assets/r-ai-logo.png" alt="R-AI" />
+              </div>
+              <span class="sb-brand-name">R-AI</span>
             </div>
-            <span class="sb-brand-name">R-AI</span>
+            <button
+              class="sb-tog-inline"
+              id="sb-tog-inline"
+              aria-label="Close sidebar"
+              title="Hide sidebar"
+            >
+              <i class="fa-solid fa-bars"></i>
+            </button>
           </div>
           <button class="nc-btn" id="nc-btn" aria-label="New chat">
             <i class="fa-solid fa-plus"></i>
@@ -70,53 +82,73 @@
       <main id="main">
         <!-- Top Bar -->
         <header id="topbar">
-          <button class="tb-btn" id="sb-tog" aria-label="Toggle sidebar">
+          <!-- Left: hamburger (visible when sidebar is closed) + chat title -->
+          <button class="tb-btn" id="sb-tog" aria-label="Toggle sidebar" title="Show sidebar">
             <i class="fa-solid fa-bars"></i>
           </button>
-
           <div class="tb-title" id="tb-title"></div>
-          <div class="tb-sp"></div>
 
-          <!-- Mode Switcher -->
-          <div class="mode-tabs" id="mode-tabs">
-            <button class="mode-tab act" data-mode="chat" id="tab-chat">Chat</button>
-            <button class="mode-tab" data-mode="image" id="tab-image">Image</button>
+          <!-- Center: Chat | Image tabs with Instructions button alongside -->
+          <div class="tb-center">
+            <div class="mode-tabs" id="mode-tabs">
+              <button class="mode-tab act" data-mode="chat" id="tab-chat">
+                Chat
+              </button>
+              <button class="mode-tab" data-mode="image" id="tab-image">
+                Image
+              </button>
+            </div>
+            <button id="sys-prompt-btn" class="instr-btn" title="System Instructions">
+              <i class="fa-solid fa-sliders"></i>
+              <span class="hidden sm:inline">Instructions</span>
+            </button>
           </div>
 
-          <button id="sys-prompt-btn" title="System Instructions">
-            <i class="fa-solid fa-sliders"></i>
-            <span class="hidden sm:inline">Instructions</span>
-          </button>
-
-          <!-- HW Stats ÔÇö hidden on mobile -->
-          <div class="hw-bar hidden md:flex" id="hw-bar">
-            <div class="hw-stat">
-              <span style="color: var(--t3); font-size: 10px">CPU</span>
-              <div class="hw-mini-track">
-                <div class="hw-mini-bar cpu" id="cpu-bar"></div>
+          <!-- Right: collapsible HW Stats chip -->
+          <div class="hw-wrap hidden md:flex">
+            <button class="hw-toggle" id="hw-toggle" aria-label="Show hardware stats" title="Hardware stats">
+              <i class="fa-solid fa-microchip"></i>
+              <span class="hw-toggle-mini" id="hw-toggle-mini">--%</span>
+              <i class="fa-solid fa-chevron-down hw-chev"></i>
+            </button>
+            <div class="hw-bar" id="hw-bar">
+              <div class="hw-stat">
+                <span style="color: var(--t3); font-size: 10px">CPU</span>
+                <div class="hw-mini-track">
+                  <div class="hw-mini-bar cpu" id="cpu-bar"></div>
+                </div>
+                <span class="hw-pct" id="cpu-pct">--%</span>
               </div>
-              <span class="hw-pct" id="cpu-pct">--%</span>
-            </div>
-            <div class="hw-stat">
-              <span style="color: var(--t3); font-size: 10px">RAM</span>
-              <div class="hw-mini-track">
-                <div class="hw-mini-bar ram" id="ram-bar"></div>
+              <div class="hw-stat">
+                <span style="color: var(--t3); font-size: 10px">RAM</span>
+                <div class="hw-mini-track">
+                  <div class="hw-mini-bar ram" id="ram-bar"></div>
+                </div>
+                <span class="hw-pct" id="ram-pct">--%</span>
               </div>
-              <span class="hw-pct" id="ram-pct">--%</span>
-            </div>
-            <div class="hw-stat" id="gpu-stat" style="display:none">
-              <span style="color: var(--t3); font-size: 10px" id="gpu-label" title="GPU utilization">GPU</span>
-              <div class="hw-mini-track">
-                <div class="hw-mini-bar gpu" id="gpu-bar"></div>
+              <div class="hw-stat" id="gpu-stat" style="display: none">
+                <span
+                  style="color: var(--t3); font-size: 10px"
+                  id="gpu-label"
+                  title="GPU utilization"
+                  >GPU</span
+                >
+                <div class="hw-mini-track">
+                  <div class="hw-mini-bar gpu" id="gpu-bar"></div>
+                </div>
+                <span class="hw-pct" id="gpu-pct">--%</span>
               </div>
-              <span class="hw-pct" id="gpu-pct">--%</span>
-            </div>
-            <div class="hw-stat" id="vram-stat" style="display:none">
-              <span style="color: var(--t3); font-size: 10px" title="GPU memory used">VRAM</span>
-              <div class="hw-mini-track">
-                <div class="hw-mini-bar vram" id="vram-bar"></div>
+              <div class="hw-stat" id="vram-stat" style="display: none">
+                <span
+                  style="color: var(--t3); font-size: 10px"
+                  title="GPU memory used"
+                  >VRAM</span
+                >
+                <div class="hw-mini-track">
+                  <div class="hw-mini-bar vram" id="vram-bar"></div>
+                </div>
+                <span class="hw-pct" id="vram-pct">--%</span>
               </div>
-              <span class="hw-pct" id="vram-pct">--%</span>
             </div>
           </div>
 
@@ -129,54 +161,67 @@
           </button>
         </header>
 
-      <!-- System Instructions Modal (full-screen overlay) -->
-      <div id="sys-overlay" aria-hidden="true">
-        <div id="sys-panel" role="dialog" aria-modal="true" aria-labelledby="sys-panel-title">
-          <header class="sys-head">
-            <div class="sys-head-text">
-              <h2 id="sys-panel-title">Instructions &amp; Settings</h2>
-              <p class="sys-head-sub">Tune how R-AI behaves in this conversation.</p>
+        <!-- System Instructions Modal (full-screen overlay) -->
+        <div id="sys-overlay" aria-hidden="true">
+          <div
+            id="sys-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sys-panel-title"
+          >
+            <header class="sys-head">
+              <div class="sys-head-text">
+                <h2 id="sys-panel-title">Instructions &amp; Settings</h2>
+                <p class="sys-head-sub">
+                  Tune how R-AI behaves in this conversation.
+                </p>
+              </div>
+              <button
+                class="sys-close"
+                id="sys-close-btn"
+                aria-label="Close instructions"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </header>
+
+            <div class="sys-body">
+              <section class="sys-section">
+                <div class="sys-section-head">
+                  <h3>System Instructions</h3>
+                  <span class="sys-section-hint">
+                    Behaviour guidance prepended to every message in this chat.
+                  </span>
+                </div>
+                <textarea
+                  id="sys-ta"
+                  placeholder="e.g. You are a precise coding assistant. Reply with concise code blocks first, then a one-line explanation."
+                ></textarea>
+                <div class="sys-actions">
+                  <button class="sys-btn primary" id="set-global-btn">
+                    <i class="fa-solid fa-thumbtack"></i> Set as Default
+                  </button>
+                  <button class="sys-btn secondary" id="clear-global-btn">
+                    <i class="fa-regular fa-trash-can"></i> Clear
+                  </button>
+                </div>
+              </section>
+
+              <section class="sys-section">
+                <div class="sys-section-head">
+                  <h3>Logging</h3>
+                  <span class="sys-section-hint">
+                    Saved per device. Errors-only keeps disk writes minimal.
+                  </span>
+                </div>
+                <select id="log-mode-select" class="sys-select">
+                  <option value="errors_only">Errors only (Recommended)</option>
+                  <option value="all">Everything (Verbose)</option>
+                </select>
+              </section>
             </div>
-            <button class="sys-close" id="sys-close-btn" aria-label="Close instructions">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </header>
-
-          <div class="sys-body">
-            <section class="sys-section">
-              <div class="sys-section-head">
-                <h3>System Instructions</h3>
-                <span class="sys-section-hint">
-                  Behaviour guidance prepended to every message in this chat.
-                </span>
-              </div>
-              <textarea id="sys-ta"
-                placeholder="e.g. You are a precise coding assistant. Reply with concise code blocks first, then a one-line explanation."></textarea>
-              <div class="sys-actions">
-                <button class="sys-btn primary" id="set-global-btn">
-                  <i class="fa-solid fa-thumbtack"></i> Set as Default
-                </button>
-                <button class="sys-btn secondary" id="clear-global-btn">
-                  <i class="fa-regular fa-trash-can"></i> Clear
-                </button>
-              </div>
-            </section>
-
-            <section class="sys-section">
-              <div class="sys-section-head">
-                <h3>Logging</h3>
-                <span class="sys-section-hint">
-                  Saved per device. Errors-only keeps disk writes minimal.
-                </span>
-              </div>
-              <select id="log-mode-select" class="sys-select">
-                <option value="errors_only">Errors only (Recommended)</option>
-                <option value="all">Everything (Verbose)</option>
-              </select>
-            </section>
           </div>
         </div>
-      </div>
 
         <!-- Chat / Messages -->
         <div id="chat">
@@ -190,7 +235,9 @@
             </div>
 
             <div class="wt">Hello</div>
-            <div class="ws">R-AI is ready — running locally on your hardware.</div>
+            <div class="ws">
+              R-AI is ready — running locally on your hardware.
+            </div>
 
             <div class="sg">
               <div
@@ -252,7 +299,11 @@
                   id="model-btn"
                   aria-label="Select model"
                 >
-                  <img src="./assets/r-ai-logo.png" alt="" class="model-btn-logo" />
+                  <img
+                    src="./assets/r-ai-logo.png"
+                    alt=""
+                    class="model-btn-logo"
+                  />
                   <span id="model-name">Loading...</span>
                   <i class="fa-solid fa-chevron-down chev"></i>
                 </button>
@@ -344,7 +395,10 @@
               </div>
               <div class="img-header-text">
                 <h2>Image Studio</h2>
-                <p>Generate images locally with Stable Diffusion. Unload the chat engine first to free RAM.</p>
+                <p>
+                  Generate images locally with Stable Diffusion. Unload the chat
+                  engine first to free RAM.
+                </p>
               </div>
             </header>
 
@@ -354,49 +408,81 @@
                 <div class="img-engine-info">
                   <span class="img-engine-dot" id="chat-engine-dot"></span>
                   <span class="img-engine-name">Chat Engine</span>
-                  <span class="img-engine-status" id="chat-engine-status">Checking...</span>
+                  <span class="img-engine-status" id="chat-engine-status"
+                    >Checking...</span
+                  >
                 </div>
-                <button class="img-engine-btn" id="img-stop-ollama">Unload</button>
-                <button class="img-engine-btn primary" id="img-start-ollama">Load</button>
+                <button class="img-engine-btn" id="img-stop-ollama">
+                  Unload
+                </button>
+                <button class="img-engine-btn primary" id="img-start-ollama">
+                  Load
+                </button>
               </div>
               <div class="img-engine-row">
                 <div class="img-engine-info">
                   <span class="img-engine-dot on" id="img-engine-dot"></span>
                   <span class="img-engine-name">Image Engine</span>
-                  <span class="img-engine-status" id="img-engine-status">Checking...</span>
+                  <span class="img-engine-status" id="img-engine-status"
+                    >Checking...</span
+                  >
                 </div>
               </div>
             </div>
 
-            <div class="img-warn" id="img-warn" style="display:none;"></div>
+            <div class="img-warn" id="img-warn" style="display: none"></div>
 
             <section class="img-card">
               <div class="img-card-head">
                 <h3>Prompt</h3>
-                <span class="img-card-hint">Describe what you want to see.</span>
+                <span class="img-card-hint"
+                  >Describe what you want to see.</span
+                >
               </div>
               <div class="img-row">
-                <textarea id="img-prompt" placeholder="A cinematic portrait of a mountain climber at sunrise, ultra detailed..."></textarea>
+                <textarea
+                  id="img-prompt"
+                  placeholder="A cinematic portrait of a mountain climber at sunrise, ultra detailed..."
+                ></textarea>
               </div>
               <div class="img-row">
                 <label>Negative Prompt</label>
-                <textarea id="img-neg" placeholder="blurry, low quality, watermark, text..." style="min-height:42px"></textarea>
+                <textarea
+                  id="img-neg"
+                  placeholder="blurry, low quality, watermark, text..."
+                  style="min-height: 42px"
+                ></textarea>
               </div>
             </section>
 
             <section class="img-card">
               <div class="img-card-head">
                 <h3>Parameters</h3>
-                <span class="img-card-hint">More steps = sharper but slower.</span>
+                <span class="img-card-hint"
+                  >More steps = sharper but slower.</span
+                >
               </div>
               <div class="img-grid">
                 <div class="img-row">
                   <label>Steps</label>
-                  <input type="number" id="img-steps" value="20" min="1" max="50" />
+                  <input
+                    type="number"
+                    id="img-steps"
+                    value="20"
+                    min="1"
+                    max="50"
+                  />
                 </div>
                 <div class="img-row">
                   <label>CFG</label>
-                  <input type="number" id="img-cfg" value="7.0" min="1" max="15" step="0.5" />
+                  <input
+                    type="number"
+                    id="img-cfg"
+                    value="7.0"
+                    min="1"
+                    max="15"
+                    step="0.5"
+                  />
                 </div>
                 <div class="img-row">
                   <label>Width</label>
@@ -447,10 +533,23 @@
             </div>
 
             <div class="img-preview" id="img-preview">
-              <div id="img-progress" style="display:none; width:100%; align-items:center; flex-direction:column; gap:10px;">
+              <div
+                id="img-progress"
+                style="
+                  display: none;
+                  width: 100%;
+                  align-items: center;
+                  flex-direction: column;
+                  gap: 10px;
+                "
+              >
                 <div class="img-progress-wrap">
                   <div class="img-progress-bar-track">
-                    <div class="img-progress-bar-fill" id="img-bar-fill" style="width:0%"></div>
+                    <div
+                      class="img-progress-bar-fill"
+                      id="img-bar-fill"
+                      style="width: 0%"
+                    ></div>
                   </div>
                   <div class="img-progress-info">
                     <span id="img-step-text">Starting...</span>
@@ -459,8 +558,22 @@
                   <div class="img-progress-eta" id="img-eta-text"></div>
                 </div>
               </div>
-              <div id="img-result" style="display:none; flex-direction:column; align-items:center; gap:12px; width:100%;">
-                <img id="img-result-img" class="img-result-img" src="" alt="Generated" />
+              <div
+                id="img-result"
+                style="
+                  display: none;
+                  flex-direction: column;
+                  align-items: center;
+                  gap: 12px;
+                  width: 100%;
+                "
+              >
+                <img
+                  id="img-result-img"
+                  class="img-result-img"
+                  src=""
+                  alt="Generated"
+                />
                 <div class="img-params-card" id="img-params-card">
                   <div class="img-params-title">Generation Parameters</div>
                   <div class="img-params-grid" id="img-params-grid"></div>
@@ -474,7 +587,9 @@
 
     <!-- Image Lightbox Modal -->
     <div id="img-modal">
-      <button class="img-modal-close" id="img-modal-close" aria-label="Close">&times;</button>
+      <button class="img-modal-close" id="img-modal-close" aria-label="Close">
+        &times;
+      </button>
       <img id="img-modal-img" src="" alt="Enlarged generated image" />
       <div class="img-modal-actions">
         <button class="img-modal-btn" id="img-modal-download">
@@ -486,7 +601,11 @@
     <div id="toasts"></div>
 
     <script>
-{{INCLUDE: app.js}}
+      {
+        {
+          INCLUDE: app.js;
+        }
+      }
     </script>
   </body>
 </html>
