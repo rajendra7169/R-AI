@@ -243,7 +243,15 @@
         <div id="chat">
           <!-- Welcome screen -->
           <div id="welcome">
-            <!-- Welcome ring removed: causing layout issues. -->
+            <!-- Theme-aware logo above the "Hello" greeting. Inline +
+                 !important CSS pin the size so no cascade can blow it up,
+                 matching the defence pattern used on the fbar preview. -->
+            <img
+              src="./assets/r-ai-logo-dark.png"
+              alt="R-AI"
+              class="r-ai-logo welcome-logo"
+              style="width:80px;height:80px;max-width:80px;max-height:80px;object-fit:contain;display:block;margin-bottom:18px;"
+            />
 
 
             <div class="wt">Hello</div>

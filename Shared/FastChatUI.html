@@ -978,6 +978,20 @@
         object-fit: contain;
       }
 
+      /* Welcome-screen logo above "Hello". Hard-pinned dimensions so the
+         intrinsic image size (~512px) can never leak into the layout
+         again, regardless of cache/cascade. */
+      img.welcome-logo {
+        width: 80px !important;
+        height: 80px !important;
+        max-width: 80px !important;
+        max-height: 80px !important;
+        object-fit: contain !important;
+        display: block !important;
+        margin-bottom: 18px !important;
+        flex-shrink: 0 !important;
+      }
+
       /* Gemini-style animated logo mark. The !important here is defensive:
          in a recent session the welcome ring was rendering at hundreds of
          pixels instead of 60×60 for unclear cascade reasons; pinning the
@@ -2856,7 +2870,15 @@
         <div id="chat">
           <!-- Welcome screen -->
           <div id="welcome">
-            <!-- Welcome ring removed: causing layout issues. -->
+            <!-- Theme-aware logo above the "Hello" greeting. Inline +
+                 !important CSS pin the size so no cascade can blow it up,
+                 matching the defence pattern used on the fbar preview. -->
+            <img
+              src="./assets/r-ai-logo-dark.png"
+              alt="R-AI"
+              class="r-ai-logo welcome-logo"
+              style="width:80px;height:80px;max-width:80px;max-height:80px;object-fit:contain;display:block;margin-bottom:18px;"
+            />
 
 
             <div class="wt">Hello</div>
