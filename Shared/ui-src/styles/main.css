@@ -1386,18 +1386,30 @@
         display: flex;
         padding: 10px 14px 4px;
       }
+      /* Override the generic .img-preview rule (used by Image Studio's
+         result panel further down) — without !important here the bigger
+         rule's `width: 100%` could leak in and stretch the chat-input
+         attachment preview to fill the input bar. Force a fixed 60x60
+         thumbnail regardless of which CSS rule the cascade picks. */
       .fbar .img-preview {
-        position: relative;
-        width: 60px;
-        height: 60px;
+        position: relative !important;
+        width: 60px !important;
+        height: 60px !important;
+        max-width: 60px !important;
+        max-height: 60px !important;
         border-radius: 10px;
         overflow: hidden;
         border: 1px solid var(--bd);
+        display: block !important;
+        flex: 0 0 60px !important;
       }
       .fbar .img-preview img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+        width: 60px !important;
+        height: 60px !important;
+        max-width: 60px !important;
+        max-height: 60px !important;
+        object-fit: cover !important;
+        display: block !important;
       }
       .pdf-preview {
         display: flex;
