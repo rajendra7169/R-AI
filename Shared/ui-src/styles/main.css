@@ -2200,3 +2200,36 @@
         padding: 8px;
         line-height: 1;
       }
+
+      /* Reasoning trace (Qwen 3.x / DeepSeek style models put their internal
+         <think>...</think> output into message.thinking; we render it in a
+         collapsible block so the user can see the model is alive while it
+         reasons, instead of staring at an empty bubble.) */
+      .think-block {
+        background: rgba(145, 100, 255, 0.06);
+        border: 1px solid rgba(145, 100, 255, 0.25);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: var(--t2);
+      }
+      .think-block summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--purple, #9164ff);
+        list-style: none;
+        user-select: none;
+      }
+      .think-block summary::-webkit-details-marker {
+        display: none;
+      }
+      .think-block[open] summary {
+        margin-bottom: 8px;
+      }
+      .think-body {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        opacity: 0.85;
+        line-height: 1.5;
+      }

@@ -145,6 +145,8 @@ class ServerClient:
             headers=self._headers(),
         )
         full = []
+        thinking_parts = []
+        in_thinking = False
         with urllib.request.urlopen(req, timeout=600) as r:
             for raw_line in r:
                 line = raw_line.strip()
@@ -154,13 +156,31 @@ class ServerClient:
                     msg = json.loads(line)
                 except Exception:
                     continue
-                token = (msg.get("message") or {}).get("content", "")
-                if token:
-                    full.append(token)
-                    on_token(token)
+                message = msg.get("message") or {}
+                # Qwen 3.x / DeepSeek-style reasoning models emit "thinking"
+                # alongside (or instead of) "content". Stream thinking dimmed
+                # so the user knows the model is alive while it reasons.
+                think_token = message.get("thinking", "")
+                if think_token:
+                    if not in_thinking:
+                        on_token("\033[2m💭 ")  # ANSI dim + reasoning marker
+                        in_thinking = True
+                    thinking_parts.append(think_token)
+                    on_token(think_token)
+                content_token = message.get("content", "")
+                if content_token:
+                    if in_thinking:
+                        on_token("\033[0m\n")  # close dim, separate reasoning from answer
+                        in_thinking = False
+                    full.append(content_token)
+                    on_token(content_token)
                 if msg.get("done"):
+                    if in_thinking:
+                        on_token("\033[0m")
                     break
-        return "".join(full)
+        # If the model only produced reasoning and never landed on an answer,
+        # return that so the caller can still preserve it in chat history.
+        return "".join(full) or ("[reasoning only] " + "".join(thinking_parts))
 
 
 # ── Header / Logo ─────────────────────────────────────────────────────

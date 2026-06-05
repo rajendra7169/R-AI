@@ -1026,16 +1026,35 @@
               if (!line.trim()) continue;
               try {
                 const p = JSON.parse(line);
+                if (p.message?.thinking) {
+                  aiMsg.thinking = (aiMsg.thinking || '') + p.message.thinking;
+                }
                 if (p.message?.content) {
                   aiMsg.content += p.message.content;
-                  if (contentEl) contentEl.textContent = aiMsg.content;
+                }
+                if (contentEl) {
+                  contentEl.textContent = aiMsg.content
+                    || (aiMsg.thinking ? '💭 ' + aiMsg.thinking : '');
                   scrollEnd();
                 }
               } catch {}
             }
           }
+          // Final render. If the model produced only a reasoning trace
+          // (Qwen 3.x / DeepSeek-style think blocks → message.thinking, empty
+          // message.content), show that reasoning instead of nothing.
           if (contentEl) {
-            contentEl.innerHTML = renderMd(aiMsg.content);
+            const renderedContent = aiMsg.content
+              ? renderMd(aiMsg.content)
+              : '';
+            const renderedThinking = aiMsg.thinking
+              ? `<details class="think-block" ${aiMsg.content ? '' : 'open'}>
+                   <summary>💭 Reasoning</summary>
+                   <div class="think-body">${renderMd(aiMsg.thinking)}</div>
+                 </details>`
+              : '';
+            contentEl.innerHTML = renderedThinking + renderedContent
+              || '<span style="color:var(--t3);font-style:italic;">[Model returned no output — try a simpler prompt or switch model.]</span>';
             contentEl.querySelectorAll('pre code').forEach((b) => {
               if (!b.classList.contains('hljs')) hljs.highlightElement(b);
             });
@@ -1162,6 +1181,16 @@
       function renderAI(msg, isLast) {
         const parsed =
           S.streaming && isLast ? esc(msg.content) : renderMd(msg.content);
+        const thinkingHtml = msg.thinking
+          ? `<details class="think-block" ${msg.content ? '' : 'open'}>
+               <summary>💭 Reasoning</summary>
+               <div class="think-body">${renderMd(msg.thinking)}</div>
+             </details>`
+          : '';
+        const body = thinkingHtml + (parsed || '');
+        const finalBody = body || (msg.thinking || msg.content
+          ? body
+          : '<span style="color:var(--t3);font-style:italic;">[Empty response]</span>');
         const actions =
           !S.streaming || !isLast
             ? `
@@ -1174,7 +1203,7 @@
 
         return `<div class="mr">
         <div class="ma ai"><img src="./assets/r-ai-logo.png" alt="R-AI"/></div>
-        <div class="mc"><div class="mt">${parsed || ''}</div>${actions}</div>
+        <div class="mc"><div class="mt">${finalBody}</div>${actions}</div>
     </div>`;
       }
 
