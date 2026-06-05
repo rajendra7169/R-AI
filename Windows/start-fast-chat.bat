@@ -14,6 +14,10 @@ echo.
 set "OLLAMA_MODELS=%~dp0..\Shared\models\ollama_data"
 set "OLLAMA_ORIGINS=*"
 set "OLLAMA_HOST=127.0.0.1:11434"
+:: Force only one model loaded at a time. Without this, switching models
+:: mid-session loads the new one alongside the old, which OOMs cards with
+:: limited VRAM (6 GB cards can't fit two 5 GB Q4 models together).
+set "OLLAMA_MAX_LOADED_MODELS=1"
 
 :: -------------------------------------------------------
 :: Find Python: prefer portable USB copy, then system
