@@ -1613,9 +1613,20 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
                         return
 
         except urllib.error.HTTPError as e:
+            # Read upstream body once so we can both log it AND forward
+            # it to the client. Without capturing the body here, all
+            # we'd see in the logs was "400" with no reason.
+            try:
+                upstream_body = e.read()
+            except Exception:
+                upstream_body = b""
+            try:
+                preview = upstream_body.decode("utf-8", errors="replace")[:1000]
+            except Exception:
+                preview = "<undecodable>"
             _log_event(
                 logging.ERROR,
-                f"Upstream HTTP error from Ollama: {e.code}",
+                f"Upstream HTTP error from Ollama: {e.code} — body: {preview}",
                 request_context=request_context,
                 exc_info=True,
             )
@@ -1623,7 +1634,7 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
             self._cors_headers()
             self.end_headers()
             try:
-                self.wfile.write(e.read())
+                self.wfile.write(upstream_body)
             except (BrokenPipeError, ConnectionResetError, OSError):
                 pass
 
