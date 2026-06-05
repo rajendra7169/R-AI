@@ -636,7 +636,7 @@
           .map(
             (m) => `
         <div class="mm-opt ${m.name === S.model ? 'sel' : ''}" data-model="${m.name}">
-            <div class="mmo-icon"><img src="./assets/r-ai-logo.png" alt=""/></div>
+            <div class="mmo-icon"><img src="${S.theme === 'light' ? './assets/r-ai-logo-light.png' : './assets/r-ai-logo-dark.png'}" class="r-ai-logo" alt=""/></div>
             <div class="mmo-info">
                 <div class="mmo-name">${esc(m.name)}${isVision(m.name) ? ' <span class="mmo-tag"><i class="fa-solid fa-eye"></i> Vision</span>' : ''}</div>
                 <div class="mmo-desc">${(m.size / 1e9).toFixed(1)} GB</div>
@@ -1288,7 +1288,7 @@
             : '';
 
         return `<div class="mr">
-        <div class="ma ai"><img src="./assets/r-ai-logo.png" alt="R-AI"/></div>
+        <div class="ma ai"><img src="${S.theme === 'light' ? './assets/r-ai-logo-light.png' : './assets/r-ai-logo-dark.png'}" class="r-ai-logo" alt="R-AI"/></div>
         <div class="mc"><div class="mt">${finalBody}</div>${actions}</div>
     </div>`;
       }
@@ -1330,6 +1330,24 @@
         const ic = t === 'dark' ? 'fa-moon' : 'fa-sun';
         D.thTop.querySelector('i').className = 'fa-solid ' + ic;
         D.thSb.querySelector('i').className = 'fa-solid ' + ic;
+        applyLogosForTheme(t);
+      }
+      // Swap every R-AI logo image (sidebar brand, welcome ring, model
+      // picker, assistant avatars, image-studio header) and the favicon
+      // to match the active theme. The "-dark" file is the white-outline
+      // variant designed for dark backgrounds; the "-light" file is the
+      // colourful variant for light backgrounds.
+      function applyLogosForTheme(t) {
+        const src = t === 'light'
+          ? './assets/r-ai-logo-light.png'
+          : './assets/r-ai-logo-dark.png';
+        document.querySelectorAll('img.r-ai-logo').forEach((img) => {
+          if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+        });
+        const fav = document.getElementById('favicon-link');
+        if (fav && fav.getAttribute('href') !== src) {
+          fav.setAttribute('href', src);
+        }
       }
       function toggleTheme() {
         applyTheme(S.theme === 'dark' ? 'light' : 'dark');
