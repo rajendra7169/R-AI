@@ -116,6 +116,16 @@
       async function init() {
         setupMarked();
         applyTheme(S.theme);
+        // Defensive: clear any attachments left over and force the fbar
+        // empty so no stale image preview can render on startup.
+        S.attachments = [];
+        try {
+          const fb = document.getElementById('fbar');
+          if (fb) {
+            fb.classList.remove('on');
+            fb.innerHTML = '';
+          }
+        } catch (_) { /* ignore */ }
         // Initial sidebar state — match toggleSB's mobile vs desktop logic
         if (!S.sbOpen) {
           if (window.innerWidth <= 768) D.sb.classList.add('off');
@@ -764,10 +774,16 @@
         }
 
         D.fBar.classList.add('on');
+        // Inline style on the wrapper + image so no CSS cascade (cached
+        // stylesheets, future rule additions, browser quirks) can grow it
+        // past the 60×60 thumbnail. Inline beats anything except other
+        // inline !important.
+        const previewStyle = 'width:60px;height:60px;max-width:60px;max-height:60px;overflow:hidden;position:relative;border-radius:10px;border:1px solid var(--bd);display:inline-block;flex:0 0 60px;';
+        const imgStyle = 'width:60px;height:60px;max-width:60px;max-height:60px;object-fit:cover;display:block;';
         D.fBar.innerHTML = S.attachments
           .map((a) => {
             if (a.type === 'image') {
-              return `<div class="img-preview"><img src="${a.previewUrl}" alt="${esc(a.name)}"><button class="f-rm" onclick="removeAttachment('${a.id}')"><i class="fa-solid fa-xmark"></i></button></div>`;
+              return `<div class="img-preview" style="${previewStyle}"><img src="${a.previewUrl}" alt="${esc(a.name)}" style="${imgStyle}"><button class="f-rm" onclick="removeAttachment('${a.id}')"><i class="fa-solid fa-xmark"></i></button></div>`;
             }
             const icon = a.kind === 'pdf' ? 'fa-file-pdf' : 'fa-file-lines';
             const meta =
