@@ -151,20 +151,22 @@
           if (d.ram_percent === -1) return;
           setBar('cpu', d.cpu_percent);
           setBar('ram', d.ram_percent);
-          const gpuStat = $('#gpu-stat');
-          const vramStat = $('#vram-stat');
+          const gpuRow = $('#gpu-row');
           const hasGpu = d.gpu_percent !== null && d.gpu_percent !== undefined;
           if (!hasGpu) {
-            if (gpuStat) gpuStat.style.display = 'none';
-            if (vramStat) vramStat.style.display = 'none';
+            if (gpuRow) gpuRow.style.display = 'none';
           } else {
-            if (gpuStat) gpuStat.style.display = '';
-            if (vramStat) vramStat.style.display = '';
+            if (gpuRow) gpuRow.style.display = '';
             setBar('gpu', d.gpu_percent);
-            setBar('vram', d.vram_percent || 0);
-            if (d.gpu_name) {
-              const lbl = $('#gpu-label');
-              if (lbl) lbl.title = d.gpu_name;
+            // VRAM elements are hidden in the DOM; keep the value updated so
+            // the GPU label's tooltip can show both compute % and VRAM %.
+            const vramPct = $('#vram-pct');
+            if (vramPct) vramPct.textContent = (d.vram_percent || 0) + '%';
+            const lbl = $('#gpu-label');
+            if (lbl) {
+              const vp = Math.round(d.vram_percent || 0);
+              const name = d.gpu_name || 'GPU';
+              lbl.title = `${name} · compute ${Math.round(d.gpu_percent)}% · VRAM ${vp}%`;
             }
           }
           // Update the collapsed chip label with the most relevant signal
@@ -1462,10 +1464,12 @@
         });
         D.sbTog.addEventListener('click', () => toggleSB());
         D.ov.addEventListener('click', () => toggleSB(false));
-        // Sidebar-internal hamburger: closes the sidebar.
+        // Sidebar-internal hamburger: toggles between expanded and the
+        // mini-rail (or off-canvas on mobile). Earlier this was hard-coded
+        // to toggleSB(false) which made re-expanding impossible.
         const sbTogInline = document.getElementById('sb-tog-inline');
         if (sbTogInline) {
-          sbTogInline.addEventListener('click', () => toggleSB(false));
+          sbTogInline.addEventListener('click', () => toggleSB());
         }
 
         // Collapsible HW stats chip. Persist open/closed state.
