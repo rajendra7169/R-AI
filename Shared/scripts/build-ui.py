@@ -24,7 +24,16 @@ UI_SRC = ROOT / "ui-src"
 TEMPLATE = UI_SRC / "template.html"
 OUTPUT = ROOT / "FastChatUI.html"
 
+# Matches both single-line `{{INCLUDE: path}}` markers AND Prettier-reformatted
+# variants that split the braces across lines (e.g. "{\n  {\n    INCLUDE: path;\n  }\n}").
+# The single-line form is the canonical one; the multi-line form is just a
+# defensive recovery so an over-eager auto-formatter can't silently break the
+# build. Each match consumes the full block including surrounding whitespace.
 INCLUDE_RE = re.compile(r"^(?P<indent>\s*)\{\{INCLUDE:\s*(?P<path>[^}]+?)\s*\}\}\s*$")
+INCLUDE_BLOCK_RE = re.compile(
+    r"\{\s*\{\s*INCLUDE:\s*(?P<path>[A-Za-z0-9_./\-]+)\s*;?\s*\}\s*\}",
+    re.DOTALL,
+)
 
 
 def _read_text(path: Path) -> str:
@@ -32,23 +41,34 @@ def _read_text(path: Path) -> str:
         return f.read()
 
 
+def _inline(path_str: str) -> str:
+    include_path = (UI_SRC / path_str.strip()).resolve()
+    if not str(include_path).startswith(str(UI_SRC.resolve())):
+        raise ValueError(f"Refusing to include outside ui-src/: {include_path}")
+    body = _read_text(include_path)
+    return body if body.endswith("\n") else body + "\n"
+
+
 def build() -> str:
     if not TEMPLATE.is_file():
         raise FileNotFoundError(f"Missing template: {TEMPLATE}")
-    lines = _read_text(TEMPLATE).splitlines(keepends=True)
+    raw = _read_text(TEMPLATE)
+    # First pass: single-line `{{INCLUDE: path}}` markers (the canonical form).
     out_lines: list[str] = []
-    for line in lines:
+    for line in raw.splitlines(keepends=True):
         m = INCLUDE_RE.match(line.rstrip("\r\n"))
-        if not m:
+        if m:
+            out_lines.append(_inline(m.group("path")))
+        else:
             out_lines.append(line)
-            continue
-        include_path = (UI_SRC / m.group("path")).resolve()
-        if not str(include_path).startswith(str(UI_SRC.resolve())):
-            raise ValueError(f"Refusing to include outside ui-src/: {include_path}")
-        out_lines.append(_read_text(include_path))
-        if not out_lines[-1].endswith("\n"):
-            out_lines.append("\n")
-    return "".join(out_lines)
+    text = "".join(out_lines)
+    # Second pass: recover any markers that an auto-formatter split across
+    # lines (e.g. Prettier turning `{{INCLUDE: app.js}}` into a multi-line
+    # object literal). Match the broken form and replace with the file body.
+    def _replace(match: re.Match) -> str:
+        return _inline(match.group("path"))
+    text = INCLUDE_BLOCK_RE.sub(_replace, text)
+    return text
 
 
 def main() -> int:

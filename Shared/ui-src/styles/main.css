@@ -149,6 +149,54 @@
         width: 0;
         pointer-events: none;
       }
+      /* Mini rail: collapsed but still visible (desktop only) — like the
+         ChatGPT collapsed sidebar. Just enough room for the logo, the
+         toggle, the New-chat icon, and the footer buttons. */
+      #sidebar.mini {
+        width: 60px;
+        min-width: 60px;
+      }
+      #sidebar.mini .sb-brand-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding: 0 0 6px;
+      }
+      #sidebar.mini .sb-brand {
+        justify-content: center;
+      }
+      #sidebar.mini .sb-brand-name {
+        display: none;
+      }
+      #sidebar.mini .sb-tog-inline {
+        align-self: center;
+      }
+      #sidebar.mini .nc-btn {
+        padding: 8px;
+        justify-content: center;
+        font-size: 16px;
+      }
+      #sidebar.mini .nc-btn span {
+        display: none;
+      }
+      #sidebar.mini .sb-hd {
+        padding: 14px 8px 8px;
+      }
+      #sidebar.mini .sb-list {
+        display: none;
+      }
+      #sidebar.mini .sb-ft {
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px 8px;
+        align-items: stretch;
+      }
+      #sidebar.mini .sb-ft .sf-sp {
+        display: none;
+      }
+      #sidebar.mini .sb-ft .sf-btn {
+        justify-content: center;
+      }
 
       /* Sidebar header */
       .sb-hd {
@@ -377,21 +425,34 @@
         min-height: 56px;
         position: relative;
       }
-      .tb-center {
+      /* Centered 3-up mode tabs ([Chat | Instructions | Image]).
+         Pointer-events on the wrapper itself are off so the absolute
+         positioning never blocks clicks on the title or HW chip on either
+         side of it; only the buttons inside receive clicks. */
+      #mode-tabs {
         position: absolute;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        display: flex;
-        align-items: center;
-        gap: 10px;
         pointer-events: none;
       }
-      .tb-center > * {
+      #mode-tabs > * {
         pointer-events: auto;
       }
-      .instr-btn {
-        flex-shrink: 0;
+      .mode-tab.instr-tab i {
+        margin-right: 4px;
+        font-size: 11px;
+      }
+      .mode-tab.instr-tab.has-global {
+        color: var(--grad1);
+      }
+      /* On desktop the sidebar's own hamburger handles toggling, so the
+         outer one in the topbar is unnecessary. Keep it on narrow screens
+         where the sidebar goes fully off-canvas. */
+      @media (min-width: 769px) {
+        #sb-tog {
+          display: none;
+        }
       }
       .tb-btn {
         background: none;

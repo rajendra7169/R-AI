@@ -18,12 +18,14 @@
     <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
     <script src="./vendor/marked.min.js"></script>
     <script src="./vendor/highlight.min.js"></script>
+    <!-- prettier-ignore -->
     <style>
-      {{INCLUDE: styles/fonts.css}}
+{{INCLUDE: styles/fonts.css}}
     </style>
 
+    <!-- prettier-ignore -->
     <style>
-      {{INCLUDE: styles/main.css}}
+{{INCLUDE: styles/main.css}}
     </style>
   </head>
   <body>
@@ -83,30 +85,43 @@
         <!-- Top Bar -->
         <header id="topbar">
           <!-- Left: hamburger (visible when sidebar is closed) + chat title -->
-          <button class="tb-btn" id="sb-tog" aria-label="Toggle sidebar" title="Show sidebar">
+          <button
+            class="tb-btn"
+            id="sb-tog"
+            aria-label="Toggle sidebar"
+            title="Show sidebar"
+          >
             <i class="fa-solid fa-bars"></i>
           </button>
           <div class="tb-title" id="tb-title"></div>
 
-          <!-- Center: Chat | Image tabs with Instructions button alongside -->
-          <div class="tb-center">
-            <div class="mode-tabs" id="mode-tabs">
-              <button class="mode-tab act" data-mode="chat" id="tab-chat">
-                Chat
-              </button>
-              <button class="mode-tab" data-mode="image" id="tab-image">
-                Image
-              </button>
-            </div>
-            <button id="sys-prompt-btn" class="instr-btn" title="System Instructions">
+          <!-- Center: Chat | Instructions | Image. The middle "tab" opens
+               the Instructions modal instead of switching modes. -->
+          <div class="mode-tabs" id="mode-tabs">
+            <button class="mode-tab act" data-mode="chat" id="tab-chat">
+              Chat
+            </button>
+            <button
+              class="mode-tab instr-tab"
+              id="sys-prompt-btn"
+              title="System Instructions"
+            >
               <i class="fa-solid fa-sliders"></i>
-              <span class="hidden sm:inline">Instructions</span>
+              <span>Instructions</span>
+            </button>
+            <button class="mode-tab" data-mode="image" id="tab-image">
+              Image
             </button>
           </div>
 
           <!-- Right: collapsible HW Stats chip -->
           <div class="hw-wrap hidden md:flex">
-            <button class="hw-toggle" id="hw-toggle" aria-label="Show hardware stats" title="Hardware stats">
+            <button
+              class="hw-toggle"
+              id="hw-toggle"
+              aria-label="Show hardware stats"
+              title="Hardware stats"
+            >
               <i class="fa-solid fa-microchip"></i>
               <span class="hw-toggle-mini" id="hw-toggle-mini">--%</span>
               <i class="fa-solid fa-chevron-down hw-chev"></i>
@@ -600,12 +615,9 @@
 
     <div id="toasts"></div>
 
+    <!-- prettier-ignore -->
     <script>
-      {
-        {
-          INCLUDE: app.js;
-        }
-      }
+{{INCLUDE: app.js}}
     </script>
   </body>
 </html>

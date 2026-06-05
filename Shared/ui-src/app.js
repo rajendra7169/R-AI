@@ -116,7 +116,11 @@
       async function init() {
         setupMarked();
         applyTheme(S.theme);
-        if (!S.sbOpen) D.sb.classList.add('off');
+        // Initial sidebar state — match toggleSB's mobile vs desktop logic
+        if (!S.sbOpen) {
+          if (window.innerWidth <= 768) D.sb.classList.add('off');
+          else D.sb.classList.add('mini');
+        }
 
         await loadGlobalPrompt();
         await fetchModels();
@@ -1330,8 +1334,17 @@
       }
       function toggleSB(force) {
         S.sbOpen = force !== undefined ? force : !S.sbOpen;
-        D.sb.classList.toggle('off', !S.sbOpen);
-        D.ov.classList.toggle('on', S.sbOpen && window.innerWidth <= 768);
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+          // Mobile: full off-canvas; show overlay so a tap outside closes it
+          D.sb.classList.toggle('off', !S.sbOpen);
+          D.sb.classList.remove('mini');
+        } else {
+          // Desktop: mini-rail when "closed" (icons only) — like ChatGPT
+          D.sb.classList.toggle('mini', !S.sbOpen);
+          D.sb.classList.remove('off');
+        }
+        D.ov.classList.toggle('on', S.sbOpen && isMobile);
       }
 
       function updateSend() {
