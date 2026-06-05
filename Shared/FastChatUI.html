@@ -6,17 +6,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <!-- Goal: completely blank window title bar in Chromium --app mode.
-         Whitespace-only titles (&nbsp; etc.) get trimmed by Edge which then
-         falls back to "localhost:3333". Using U+2800 BRAILLE PATTERN BLANK
-         — a real, non-whitespace character that renders as a blank glyph —
-         survives the trim. A short DOM-ready script re-applies it in case
-         the page sets document.title to something else later.
-         Favicon is a 1x1 transparent PNG so the title-bar icon disappears
-         too. -->
+    <!-- Title:
+           U+2800 BRAILLE PATTERN BLANK — a printable non-whitespace glyph
+           that renders as nothing. Whitespace-only titles get trimmed by
+           Edge in --app mode and the URL "localhost:3333" leaks into the
+           title bar; this character survives the trim and shows truly
+           blank. DOM-ready script re-applies it in case anything later
+           sets document.title.
+         Favicon:
+           The R-AI logo. Chromium uses the same image for the title-bar
+           corner AND the Windows taskbar, so we can't blank one without
+           blanking the other. With the title text blank and the small
+           icon in the corner, the title bar looks like a native app. -->
     <title>⠀⠀</title>
-    <link rel="icon" type="image/png"
-          href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAIAAAoAAv/lxKUAAAAASUVORK5CYII=" />
+    <link rel="icon" type="image/png" href="./assets/r-ai-logo.png" />
     <script>document.title = '⠀⠀';</script>
     <!-- Vendor assets (downloaded offline by platform installer) -->
     <link rel="stylesheet" href="./vendor/fa-all.min.css" />
