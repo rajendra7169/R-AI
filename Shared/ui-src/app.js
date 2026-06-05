@@ -147,6 +147,21 @@
           if (d.ram_percent === -1) return;
           setBar('cpu', d.cpu_percent);
           setBar('ram', d.ram_percent);
+          const gpuStat = $('#gpu-stat');
+          const vramStat = $('#vram-stat');
+          if (d.gpu_percent === null || d.gpu_percent === undefined) {
+            if (gpuStat) gpuStat.style.display = 'none';
+            if (vramStat) vramStat.style.display = 'none';
+          } else {
+            if (gpuStat) gpuStat.style.display = '';
+            if (vramStat) vramStat.style.display = '';
+            setBar('gpu', d.gpu_percent);
+            setBar('vram', d.vram_percent || 0);
+            if (d.gpu_name) {
+              const lbl = $('#gpu-label');
+              if (lbl) lbl.title = d.gpu_name;
+            }
+          }
         } catch {}
       }
       function setBar(type, pct) {
@@ -1027,6 +1042,29 @@
           const dec = new TextDecoder();
           if (contentEl) contentEl.innerHTML = '';
 
+          // While streaming, the bubble has two areas: an animated
+          // "Thinking…" pill that shows reasoning live, plus a content
+          // area that fills once the model emits real tokens. Tracking
+          // refs so we don't re-build the DOM on every chunk.
+          let thinkLive = null;   // live-reasoning pill element
+          let contentBody = null; // real content target
+          let contentStarted = false;
+          const ensureLiveShells = () => {
+            if (!contentEl) return;
+            if (!thinkLive && aiMsg.thinking) {
+              contentEl.innerHTML =
+                '<div class="think-live"><span class="think-spin"></span>' +
+                '<span class="think-label">Thinking</span>' +
+                '<span class="think-stream"></span></div>' +
+                '<div class="think-content"></div>';
+              thinkLive = contentEl.querySelector('.think-stream');
+              contentBody = contentEl.querySelector('.think-content');
+            } else if (!contentBody) {
+              contentEl.innerHTML = '<div class="think-content"></div>';
+              contentBody = contentEl.querySelector('.think-content');
+            }
+          };
+
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -1037,32 +1075,38 @@
                 const p = JSON.parse(line);
                 if (p.message?.thinking) {
                   aiMsg.thinking = (aiMsg.thinking || '') + p.message.thinking;
+                  ensureLiveShells();
+                  if (thinkLive) {
+                    thinkLive.textContent = aiMsg.thinking.slice(-180);
+                  }
                 }
                 if (p.message?.content) {
                   aiMsg.content += p.message.content;
+                  ensureLiveShells();
+                  if (!contentStarted && contentEl) {
+                    const pill = contentEl.querySelector('.think-live');
+                    if (pill) pill.classList.add('done');
+                    contentStarted = true;
+                  }
+                  if (contentBody) contentBody.textContent = aiMsg.content;
                 }
-                if (contentEl) {
-                  contentEl.textContent = aiMsg.content
-                    || (aiMsg.thinking ? '💭 ' + aiMsg.thinking : '');
-                  scrollEnd();
-                }
+                scrollEnd();
               } catch {}
             }
           }
-          // Final render. If the model produced only a reasoning trace
-          // (Qwen 3.x / DeepSeek-style think blocks → message.thinking, empty
-          // message.content), show that reasoning instead of nothing.
+          // Final render. Collapse any thinking into a small details block
+          // and render the answer below it.
           if (contentEl) {
             const renderedContent = aiMsg.content
               ? renderMd(aiMsg.content)
               : '';
             const renderedThinking = aiMsg.thinking
               ? `<details class="think-block" ${aiMsg.content ? '' : 'open'}>
-                   <summary>💭 Reasoning</summary>
+                   <summary><span class="think-dot"></span> Reasoning <span class="think-meta">${aiMsg.thinking.length} chars</span></summary>
                    <div class="think-body">${renderMd(aiMsg.thinking)}</div>
                  </details>`
               : '';
-            contentEl.innerHTML = renderedThinking + renderedContent
+            contentEl.innerHTML = (renderedThinking + renderedContent)
               || '<span style="color:var(--t3);font-style:italic;">[Model returned no output — try a simpler prompt or switch model.]</span>';
             contentEl.querySelectorAll('pre code').forEach((b) => {
               if (!b.classList.contains('hljs')) hljs.highlightElement(b);
@@ -1192,7 +1236,7 @@
           S.streaming && isLast ? esc(msg.content) : renderMd(msg.content);
         const thinkingHtml = msg.thinking
           ? `<details class="think-block" ${msg.content ? '' : 'open'}>
-               <summary>💭 Reasoning</summary>
+               <summary><span class="think-dot"></span> Reasoning <span class="think-meta">${msg.thinking.length} chars</span></summary>
                <div class="think-body">${renderMd(msg.thinking)}</div>
              </details>`
           : '';

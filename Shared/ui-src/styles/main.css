@@ -453,6 +453,12 @@
       .hw-mini-bar.ram {
         background: var(--grad2);
       }
+      .hw-mini-bar.gpu {
+        background: var(--green, #6dd58c);
+      }
+      .hw-mini-bar.vram {
+        background: var(--orange, #fdb039);
+      }
       .hw-pct {
         min-width: 28px;
         font-size: 11px;
@@ -2201,37 +2207,124 @@
         line-height: 1;
       }
 
-      /* Reasoning trace (Qwen 3.x / DeepSeek style models put their internal
-         <think>...</think> output into message.thinking; we render it in a
-         collapsible block so the user can see the model is alive while it
-         reasons, instead of staring at an empty bubble.) */
-      .think-block {
-        background: rgba(145, 100, 255, 0.06);
-        border: 1px solid rgba(145, 100, 255, 0.25);
-        border-radius: 10px;
-        padding: 8px 12px;
+      /* ── Reasoning trace ──────────────────────────────────────
+         Reasoning models (Qwen 3.x / DeepSeek-style) put their internal
+         <think>...</think> output into message.thinking. While the model is
+         actively reasoning we show an animated "Thinking…" pill with the
+         latest reasoning text scrolling alongside; once content starts (or
+         the stream ends) the pill collapses into a compact details block. */
+
+      /* Live "Thinking…" pill that streams reasoning in real-time */
+      .think-live {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(145, 100, 255, 0.08);
+        border: 1px solid rgba(145, 100, 255, 0.28);
+        border-radius: 999px;
+        padding: 5px 12px;
         margin-bottom: 10px;
-        font-size: 13px;
+        font-size: 12px;
+        color: var(--purple, #9164ff);
+        max-width: 100%;
+        overflow: hidden;
+        transition: opacity 0.3s ease;
+      }
+      .think-live.done {
+        opacity: 0.45;
+        background: rgba(145, 100, 255, 0.04);
+      }
+      .think-spin {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--purple, #9164ff);
+        box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5);
+        animation: thinkPulse 1.4s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      .think-live.done .think-spin {
+        animation: none;
+        opacity: 0.4;
+      }
+      @keyframes thinkPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(145, 100, 255, 0.5); }
+        50%      { transform: scale(1.25); box-shadow: 0 0 0 6px rgba(145, 100, 255, 0); }
+      }
+      .think-label {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+      }
+      .think-stream {
+        color: var(--t3);
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+        font-size: 11.5px;
+        direction: rtl;       /* keep the newest tokens visible */
+        text-align: left;
+      }
+      .think-content {
+        /* container for streaming content so it sits below the pill */
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      /* Final collapsed block (post-stream and on history replay) */
+      .think-block {
+        background: rgba(145, 100, 255, 0.05);
+        border: 1px solid rgba(145, 100, 255, 0.22);
+        border-radius: 10px;
+        padding: 6px 10px;
+        margin-bottom: 10px;
+        font-size: 12px;
         color: var(--t2);
       }
       .think-block summary {
         cursor: pointer;
         font-weight: 600;
+        font-size: 11.5px;
         color: var(--purple, #9164ff);
         list-style: none;
         user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 7px;
       }
       .think-block summary::-webkit-details-marker {
         display: none;
       }
+      .think-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--purple, #9164ff);
+        opacity: 0.6;
+        flex-shrink: 0;
+      }
+      .think-meta {
+        margin-left: auto;
+        font-size: 10.5px;
+        color: var(--t3);
+        font-weight: 500;
+      }
       .think-block[open] summary {
-        margin-bottom: 8px;
+        margin-bottom: 6px;
       }
       .think-body {
         white-space: pre-wrap;
         word-wrap: break-word;
-        opacity: 0.85;
+        opacity: 0.82;
         line-height: 1.5;
+        font-size: 12.5px;
+        color: var(--t2);
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 6px;
       }
 
       /* Brain toggle next to the temperature control */

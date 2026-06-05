@@ -160,6 +160,46 @@ AUTH_COOKIE_NAME = "r_ai_token"
 # ── Pure-Python Hardware Stats (no psutil needed) ──────────────
 _cpu_times_last = None  # (idle, total) from previous sample
 
+def _get_gpu_stats():
+    """Return (gpu_percent, vram_percent, gpu_name) or (None, None, None).
+
+    Uses nvidia-smi if available — the only widely available no-deps way to
+    query NVIDIA cards. Cached at module import: the binary lookup is cheap
+    but spawning a subprocess every 5s isn't free either, so we keep it
+    behind a short-lived cache.
+    """
+    nv = getattr(_get_gpu_stats, "_nvidia_smi", "__uncached__")
+    if nv == "__uncached__":
+        import shutil as _shutil
+        nv = _shutil.which("nvidia-smi")
+        if not nv and platform.system() == "Windows":
+            for candidate in (
+                r"C:\\Windows\\System32\\nvidia-smi.exe",
+                r"C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe",
+            ):
+                if os.path.isfile(candidate):
+                    nv = candidate
+                    break
+        _get_gpu_stats._nvidia_smi = nv
+    if not nv:
+        return None, None, None
+    try:
+        out = subprocess.run(
+            [nv, "--query-gpu=utilization.gpu,memory.used,memory.total,name",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=2,
+        )
+        line = (out.stdout or "").splitlines()[0]
+        parts = [p.strip() for p in line.split(",")]
+        util = float(parts[0])
+        used = float(parts[1])
+        total = float(parts[2]) or 1.0
+        name = parts[3] if len(parts) > 3 else None
+        return round(util, 1), round((used / total) * 100, 1), name
+    except Exception:
+        return None, None, None
+
+
 def _get_hw_stats():
     """Return (cpu_percent, ram_percent) using only stdlib / ctypes."""
     global _cpu_times_last  # must be at top of function, before any branch uses it
@@ -1228,10 +1268,18 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
 
     # ── Hardware Stats ─────────────────────────────────────────
     def _get_stats(self):
-        """Return CPU % and RAM % as JSON. Works with no external packages."""
+        """Return CPU/RAM/GPU % as JSON. Works with no external packages."""
         try:
             cpu, ram = _get_hw_stats()
-            data = json.dumps({"cpu_percent": cpu, "ram_percent": ram, "has_psutil": HAS_PSUTIL})
+            gpu_pct, vram_pct, gpu_name = _get_gpu_stats()
+            data = json.dumps({
+                "cpu_percent": cpu,
+                "ram_percent": ram,
+                "gpu_percent": gpu_pct,
+                "vram_percent": vram_pct,
+                "gpu_name": gpu_name,
+                "has_psutil": HAS_PSUTIL,
+            })
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self._cors_headers()

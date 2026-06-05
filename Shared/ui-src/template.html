@@ -6,8 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>R-AI · Local Chat</title>
-    <link rel="icon" type="image/png" href="./assets/r-ai-logo.png" />
+    <!-- Title is a single non-breaking space so the OS app-mode title bar
+         shows blank instead of "R-AI · Local Chat". The favicon is omitted
+         for the same reason — branding lives inside the UI itself. -->
+    <title> </title>
     <!-- Vendor assets (downloaded offline by platform installer) -->
     <link rel="stylesheet" href="./vendor/fa-all.min.css" />
     <link rel="stylesheet" href="./vendor/highlight-github-dark.min.css" />
@@ -100,6 +102,20 @@
                 <div class="hw-mini-bar ram" id="ram-bar"></div>
               </div>
               <span class="hw-pct" id="ram-pct">--%</span>
+            </div>
+            <div class="hw-stat" id="gpu-stat" style="display:none">
+              <span style="color: var(--t3); font-size: 10px" id="gpu-label" title="GPU utilization">GPU</span>
+              <div class="hw-mini-track">
+                <div class="hw-mini-bar gpu" id="gpu-bar"></div>
+              </div>
+              <span class="hw-pct" id="gpu-pct">--%</span>
+            </div>
+            <div class="hw-stat" id="vram-stat" style="display:none">
+              <span style="color: var(--t3); font-size: 10px" title="GPU memory used">VRAM</span>
+              <div class="hw-mini-track">
+                <div class="hw-mini-bar vram" id="vram-bar"></div>
+              </div>
+              <span class="hw-pct" id="vram-pct">--%</span>
             </div>
           </div>
 
