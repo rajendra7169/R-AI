@@ -243,16 +243,20 @@
         <div id="chat">
           <!-- Welcome screen -->
           <div id="welcome">
-            <!-- Theme-aware logo with a gradient ring (same blue→purple
-                 →pink gradient the "Hello" text uses). The wrapper div is
-                 the gradient ring; padding creates the ring thickness,
-                 inner background masks the centre. -->
+            <!-- Theme-aware logo with a gradient ring (same blue→purple→pink
+                 gradient as "Hello"). Three layers:
+                   .welcome-logo-ring   — outer; gradient + 3px padding = ring band
+                   .welcome-logo-inner  — middle; bg-coloured mask, hosts the gap
+                   .welcome-logo (img)  — actual logo, smaller than inner so a
+                                          ring of background colour shows around it. -->
             <div class="welcome-logo-ring">
-              <img
-                src="./assets/r-ai-logo-dark.png"
-                alt="R-AI"
-                class="r-ai-logo welcome-logo"
-              />
+              <div class="welcome-logo-inner">
+                <img
+                  src="./assets/r-ai-logo-dark.png"
+                  alt="R-AI"
+                  class="r-ai-logo welcome-logo"
+                />
+              </div>
             </div>
 
 

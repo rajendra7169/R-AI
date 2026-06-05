@@ -872,13 +872,14 @@
         object-fit: contain;
       }
 
-      /* Welcome screen: gradient ring + logo. The ring's gradient matches
-         the "Hello" text gradient (grad1 → grad2 → grad3). Padding on the
-         ring creates the visible band, and an inner solid background
-         masks the centre so only the band shows. */
+      /* Welcome screen: gradient ring with inset logo.
+           ring   (108×108): gradient band — 3px padding makes the visible band
+           inner  (102×102): bg-coloured mask filling the inside of the ring
+           img     (72×72):  the logo, centred in the inner with breathing room
+                             ((102 - 72)/2 = 15px of gap on every side). */
       .welcome-logo-ring {
-        width: 96px;
-        height: 96px;
+        width: 108px;
+        height: 108px;
         border-radius: 50%;
         padding: 3px;
         background: linear-gradient(
@@ -894,15 +895,22 @@
         flex-shrink: 0;
         box-shadow: 0 8px 24px rgba(145, 100, 255, 0.18);
       }
-      img.welcome-logo {
-        width: 90px !important;
-        height: 90px !important;
-        max-width: 90px !important;
-        max-height: 90px !important;
-        object-fit: contain !important;
-        display: block !important;
+      .welcome-logo-inner {
+        width: 100%;
+        height: 100%;
         border-radius: 50%;
         background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      img.welcome-logo {
+        width: 72px !important;
+        height: 72px !important;
+        max-width: 72px !important;
+        max-height: 72px !important;
+        object-fit: contain !important;
+        display: block !important;
         flex-shrink: 0 !important;
       }
 
