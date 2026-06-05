@@ -1527,18 +1527,46 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
                 target_url = OLLAMA_HOST + "/v1/chat/completions"
                 body = json.dumps(openai_req).encode()
 
-            req = urllib.request.Request(
-                target_url,
-                data=body,
-                method=method,
-                headers={"Content-Type": self.headers.get("Content-Type", "application/json")}
-            )
+            def _make_request(req_body):
+                r = urllib.request.Request(
+                    target_url,
+                    data=req_body,
+                    method=method,
+                    headers={"Content-Type": self.headers.get("Content-Type", "application/json")}
+                )
+                if "Authorization" in self.headers:
+                    r.add_header("Authorization", self.headers.get("Authorization"))
+                return r
 
-            # Optional: pass Authorization header if present
-            if "Authorization" in self.headers:
-                req.add_header("Authorization", self.headers.get("Authorization"))
+            req = _make_request(body)
 
-            response = urllib.request.urlopen(req, timeout=600)
+            # First attempt. If Ollama 0.30+ rejects the `think` field because
+            # the target model has no reasoning support
+            # ({"error":"\"foo\" does not support thinking"}), strip the
+            # field and retry once. This lets non-reasoning models work even
+            # when the UI sends think:false as its default.
+            try:
+                response = urllib.request.urlopen(req, timeout=600)
+            except urllib.error.HTTPError as he:
+                if he.code == 400 and isinstance(payload, dict) and "think" in payload:
+                    try:
+                        err_text = he.read().decode("utf-8", errors="replace")
+                    except Exception:
+                        err_text = ""
+                    if "does not support thinking" in err_text:
+                        _log_event(
+                            logging.INFO,
+                            f"Retrying chat without think field for model {payload.get('model','?')}",
+                            request_context=request_context,
+                        )
+                        retry_payload = {k: v for k, v in payload.items() if k != "think"}
+                        retry_req = _make_request(json.dumps(retry_payload).encode("utf-8"))
+                        response = urllib.request.urlopen(retry_req, timeout=600)
+                    else:
+                        # Re-raise to be handled by the outer HTTPError handler
+                        raise
+                else:
+                    raise
 
             # Send response headers
             self.send_response(response.status)
