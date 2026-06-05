@@ -1,0 +1,5 @@
+{
+  "// note": "Shared/ui-src/template.html embeds {{INCLUDE: path}} markers inside <style> tags. Those markers are consumed by Shared/scripts/build-ui.py at build time and never reach the served HTML. VS Code's CSS validator doesn't recognise them and paints them red. We disable validation of <style> blocks inside HTML files only — validation of the standalone .css files in ui-src/styles/ stays enabled.",
+  "html.validate.styles": false,
+  "html.validate.scripts": false
+}
