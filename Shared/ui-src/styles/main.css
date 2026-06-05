@@ -872,17 +872,37 @@
         object-fit: contain;
       }
 
-      /* Welcome-screen logo above "Hello". Hard-pinned dimensions so the
-         intrinsic image size (~512px) can never leak into the layout
-         again, regardless of cache/cascade. */
+      /* Welcome screen: gradient ring + logo. The ring's gradient matches
+         the "Hello" text gradient (grad1 → grad2 → grad3). Padding on the
+         ring creates the visible band, and an inner solid background
+         masks the centre so only the band shows. */
+      .welcome-logo-ring {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        padding: 3px;
+        background: linear-gradient(
+          135deg,
+          var(--grad1),
+          var(--grad2),
+          var(--grad3)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        flex-shrink: 0;
+        box-shadow: 0 8px 24px rgba(145, 100, 255, 0.18);
+      }
       img.welcome-logo {
-        width: 80px !important;
-        height: 80px !important;
-        max-width: 80px !important;
-        max-height: 80px !important;
+        width: 90px !important;
+        height: 90px !important;
+        max-width: 90px !important;
+        max-height: 90px !important;
         object-fit: contain !important;
         display: block !important;
-        margin-bottom: 18px !important;
+        border-radius: 50%;
+        background: var(--bg);
         flex-shrink: 0 !important;
       }
 
