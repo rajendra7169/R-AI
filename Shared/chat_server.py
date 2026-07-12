@@ -627,18 +627,21 @@ def _start_ollama():
         return False
 
 def _parse_sd_output(pipe, job_id, total_steps):
-    """Read sd stdout+stderr line-by-line and update job progress.
-    stable-diffusion.cpp prints step info like 'step 1 sampling completed'.
-    We merge stdout+stderr so we catch progress regardless of which stream
-    the binary writes it to."""
-    # Match: "step 1 sampling completed" or "step 1/20" or "step 1 of 20"
+    """Read sd stdout+stderr and update job progress live.
+
+    stable-diffusion.cpp emits its sampling progress with carriage returns
+    (\\r) to overwrite a single line in the terminal, not with newlines.
+    iter(readline, b"") only breaks on \\n, so every progress update would
+    arrive as one giant lump at the end and we'd only catch the first
+    "step 1/20" hit — leaving the UI stuck at 1/20 for the entire run.
+    We read in fixed-size byte chunks and split on both \\r and \\n so
+    each step is a separate observation.
+    """
     # Match "sampling ... N/M" explicitly — most reliable signal.
     sampling_pattern = re.compile(r"sampling.*?\b(\d+)\s*/\s*(\d+)", re.IGNORECASE)
     # Fallback: "N/<total_steps>" anywhere — only matches the actual sampling
     # phase because model-loading lines use different denominators (e.g.
-    # "tensor 44/850"). Avoids the previous false-positive where a loose
-    # "step \d+" regex grabbed numbers from tensor-loading log lines and the
-    # UI reported nonsense like "step 44/20".
+    # "tensor 44/850").
     fraction_pattern = re.compile(r"\b(\d+)\s*/\s*" + re.escape(str(total_steps)) + r"\b")
     # Percentage fallback only when accompanied by the word "sampling".
     pct_pattern = re.compile(r"sampling.*?(\d+)\s*%", re.IGNORECASE)
@@ -647,8 +650,27 @@ def _parse_sd_output(pipe, job_id, total_steps):
     step_start_time = None
     step_times = []
 
+    def _iter_chunks():
+        # Read small byte chunks so we surface \r-delimited progress as
+        # individual lines. Falls back cleanly when the process closes the
+        # pipe (read returns b"").
+        buf = b""
+        while True:
+            chunk = pipe.read(64)
+            if not chunk:
+                if buf:
+                    yield buf
+                return
+            buf += chunk
+            # Split on both kinds of line separators.
+            parts = re.split(rb"[\r\n]+", buf)
+            buf = parts[-1]
+            for piece in parts[:-1]:
+                if piece:
+                    yield piece
+
     try:
-        for raw_line in iter(pipe.readline, b""):
+        for raw_line in _iter_chunks():
             line = raw_line.decode("utf-8", errors="ignore").strip()
             if not line:
                 continue
