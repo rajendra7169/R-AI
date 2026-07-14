@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Install R-AI
+GenericName=R-AI Setup
+Comment=Download the AI engine and models, then add R-AI to your applications
+Icon=system-software-install
+Terminal=true
+Categories=Utility;
+Keywords=AI;LLM;Setup;Install;
+# Self-locating: %k is the full path to THIS file (GLib shell-quotes it), so
+# ${1%/*} is the folder it lives in. Written ${1%%/*} because a literal % must
+# be doubled in Exec. Parentheses are rejected by GLib, hence no $(dirname).
+Exec=sh -c "cd \\"${1%%/*}\\" && exec bash ./install.sh" sh %k

@@ -114,6 +114,40 @@ else
     fi
 fi
 
+# ── Step 6a: GPU backend ───────────────────────────────────────
+# ggml only scans the directory holding llama-server for backend
+# libraries; it never descends into cuda_v12/, cuda_v13/ or vulkan/,
+# and it ignores LD_LIBRARY_PATH when doing so. Left as shipped, the
+# CUDA backend is never found and every model runs 100% on CPU. Copy
+# the CUDA build matching the installed driver up one level so the GPU
+# is actually discovered.
+echo ""
+echo -e "${YLW}[6a/7] Enabling GPU acceleration...${RST}"
+LIB_DIR="$SHARED_BIN/lib/ollama"
+if [ ! -d "$LIB_DIR" ]; then
+    echo -e "${DGR}      Engine libraries not present. Skipping.${RST}"
+elif ! command -v nvidia-smi >/dev/null 2>&1; then
+    echo -e "${DGR}      No NVIDIA driver found. Models will run on CPU.${RST}"
+else
+    CUDA_MAJOR=$(nvidia-smi 2>/dev/null | sed -n 's/.*CUDA Version: \([0-9][0-9]*\).*/\1/p' | head -n 1)
+    case "$CUDA_MAJOR" in
+        ''|*[!0-9]*) CUDA_MAJOR=0 ;;
+    esac
+    CUDA_SRC=""
+    if [ "$CUDA_MAJOR" -ge 13 ] && [ -d "$LIB_DIR/cuda_v13" ]; then
+        CUDA_SRC="$LIB_DIR/cuda_v13"
+    elif [ -d "$LIB_DIR/cuda_v12" ]; then
+        CUDA_SRC="$LIB_DIR/cuda_v12"
+    fi
+    if [ -z "$CUDA_SRC" ]; then
+        echo -e "${YLW}      No matching CUDA runtime shipped. Models will run on CPU.${RST}"
+    elif cp -f "$CUDA_SRC"/*.so* "$LIB_DIR"/ 2>/dev/null; then
+        echo -e "${GRN}      GPU enabled ($(basename "$CUDA_SRC"), driver CUDA ${CUDA_MAJOR}).${RST}"
+    else
+        echo -e "${YLW}      Could not stage CUDA libraries. Models will run on CPU.${RST}"
+    fi
+fi
+
 # ── Step 6b: Stable Diffusion engine ───────────────────────────
 echo ""
 echo -e "${YLW}[6b/7] Downloading Stable Diffusion Image Engine (Linux)...${RST}"
@@ -180,8 +214,25 @@ echo ""
 echo -e "${YLW}[7/7] Importing AI models into the Ollama engine...${RST}"
 import_models_into_ollama "$OLLAMA_BIN"
 
+# ── Step 7b: Desktop launcher ──────────────────────────────────
+# So R-AI can be started with a click instead of a terminal command.
+echo ""
+echo -e "${YLW}[7b/7] Creating desktop launcher...${RST}"
+if [ -n "$DISPLAY$WAYLAND_DISPLAY" ]; then
+    echo ""
+    read -r -p "  Also put an R-AI icon on your Desktop? (yes/no): " WANT_DESK
+    WANT_DESK=$(echo "$WANT_DESK" | tr '[:upper:]' '[:lower:]')
+    if [ "$WANT_DESK" = "yes" ] || [ "$WANT_DESK" = "y" ]; then
+        bash "$SCRIPT_DIR/install-shortcut.sh" --desktop
+    else
+        bash "$SCRIPT_DIR/install-shortcut.sh"
+    fi
+else
+    echo -e "${DGR}      No graphical session detected. Skipping.${RST}"
+fi
+
 # ── Final ──────────────────────────────────────────────────────
-START_HINT="To start your AI: Run  bash Linux/start.sh"
+START_HINT="To start your AI: click the R-AI icon in your apps, or run  bash Linux/start.sh"
 print_final_summary "$IMAGE_MODEL"
 read -n 1 -s -r -p "Press any key to close this installer..."
 echo ""

@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Start R-AI
+GenericName=Local AI Chat
+Comment=Start the offline AI chat (engine + browser UI)
+Icon=system-run
+Terminal=false
+StartupNotify=true
+Categories=Utility;
+Keywords=AI;LLM;Chat;Offline;Ollama;
+Actions=Stop;
+# Self-locating: see the note in "Install R-AI.desktop".
+Exec=sh -c "cd \\"${1%%/*}\\" && exec bash ./start.sh" sh %k
+
+[Desktop Action Stop]
+Name=Stop R-AI
+Exec=sh -c "cd \\"${1%%/*}\\" && exec bash ./stop.sh" sh %k

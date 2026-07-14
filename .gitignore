@@ -6,6 +6,7 @@ Shared/vendor/
 # Runtime data (chat_data/ also hides the generated .access_token)
 Shared/chat_data/
 Shared/logs/
+Shared/.ollama-runtime/
 
 # OS files
 .DS_Store

@@ -17,6 +17,14 @@ SHARED_DIR="$USB_ROOT/Shared"
 OLLAMA_RUNTIME="$SHARED_DIR/.ollama-runtime"
 mkdir -p "$OLLAMA_RUNTIME"
 
+# Clicking the desktop launcher twice must not fight over port 3333. If the
+# chat server is already up, just bring the window back and get out.
+if curl -s -o /dev/null "http://127.0.0.1:3333/" 2>/dev/null; then
+    echo "[OK] R-AI is already running - reopening the chat window."
+    command -v xdg-open >/dev/null 2>&1 && xdg-open "http://localhost:3333" >/dev/null 2>&1 &
+    exit 0
+fi
+
 # ---- Full portability: keep EVERYTHING on the USB ----
 export OLLAMA_MODELS="$SHARED_DIR/models/ollama_data"
 export OLLAMA_HOME="$OLLAMA_RUNTIME"
@@ -27,19 +35,23 @@ export OLLAMA_HOST="127.0.0.1:11434"
 mkdir -p "$OLLAMA_RUNTIME/runners" "$OLLAMA_RUNTIME/tmp"
 # -------------------------------------------------------
 
+# When launched from the desktop icon there is no terminal attached, so a
+# blocking "press any key" would hang forever with nothing on screen. Report
+# failures through a desktop notification instead and exit.
+die() {
+    echo "ERROR: $1"
+    if [ ! -t 0 ] && command -v notify-send >/dev/null 2>&1; then
+        notify-send -i dialog-error "R-AI" "$1"
+    elif [ -t 0 ]; then
+        read -n 1 -s -r -p "Press any key to close..."
+        echo ""
+    fi
+    exit 1
+}
+
 # Check if the portable Linux engine is downloaded
 if [ ! -f "$SHARED_DIR/bin/ollama-linux" ]; then
-    echo "==================================================="
-    echo "  ERROR: Linux AI Engine Not Found!"
-    echo "==================================================="
-    echo ""
-    echo "  It looks like the AI engine hasn't been set up yet."
-    echo "  Please run 'bash install.sh' in this Linux"
-    echo "  folder first to safely download the components!"
-    echo ""
-    read -n 1 -s -r -p "Press any key to continue..."
-    echo ""
-    exit 1
+    die "AI engine not installed. Run 'bash Linux/install.sh' first."
 fi
 
 # Check if Ollama is already running
@@ -49,11 +61,20 @@ else
     echo "Starting offline Linux AI Engine..."
     HOME="$OLLAMA_RUNTIME" "$SHARED_DIR/bin/ollama-linux" serve &
     OLLAMA_PID=$!
-    
+
     echo "Waiting for engine to initialize..."
-    until curl -s http://127.0.0.1:11434/api/tags > /dev/null 2>&1; do
+    ENGINE_UP=0
+    for _ in $(seq 1 60); do
+        if curl -s http://127.0.0.1:11434/api/tags > /dev/null 2>&1; then
+            ENGINE_UP=1
+            break
+        fi
+        # If the engine died on startup, stop waiting for something that is
+        # never going to answer.
+        kill -0 "$OLLAMA_PID" 2>/dev/null || break
         sleep 1
     done
+    [ "$ENGINE_UP" -eq 1 ] || die "The AI engine failed to start. Try 'bash Linux/install.sh' to repair it."
     echo "[OK] Engine is online!"
 fi
 
