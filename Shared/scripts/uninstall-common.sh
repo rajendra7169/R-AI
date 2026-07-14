@@ -285,6 +285,32 @@ remove_all_downloaded() {
   remove_safe "$SHARED_DIR/python-embed.zip" "python-embed.zip"
   remove_safe "$SHARED_DIR/python" "python"
   remove_safe "$SHARED_DIR/chat_data" "chat_data"
+
+  remove_desktop_launcher
+}
+
+# The Linux installer can drop a .desktop launcher in the user's home. It sits
+# outside Shared/, so remove_safe() refuses to touch it - clean it up here, but
+# only if it is ours (it points back at this install's start.sh).
+remove_desktop_launcher() {
+  [ "$PLATFORM" = "linux" ] || return 0
+  local desk
+  desk="$(xdg-user-dir DESKTOP 2>/dev/null)"
+  [ -z "$desk" ] && desk="$HOME/Desktop"
+
+  local f
+  for f in "$HOME/.local/share/applications/r-ai.desktop" "$desk/r-ai.desktop"; do
+    [ -f "$f" ] || continue
+    if grep -q "^Exec=bash \"$USB_ROOT/Linux/start.sh\"" "$f" 2>/dev/null; then
+      rm -f "$f" && echo -e "      ${GRN}Removed:${RST} $f"
+    else
+      echo -e "      ${YLW}SKIPPED (points elsewhere):${RST} $f"
+    fi
+  done
+
+  command -v update-desktop-database >/dev/null 2>&1 && \
+    update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1
+  return 0
 }
 
 run_model_remover_menu() {

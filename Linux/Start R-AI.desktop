@@ -11,8 +11,8 @@ Categories=Utility;
 Keywords=AI;LLM;Chat;Offline;Ollama;
 Actions=Stop;
 # Self-locating: see the note in "Install R-AI.desktop".
-Exec=sh -c "cd \\"${1%%/*}\\" && exec bash ./start.sh" sh %k
+Exec=sh -c "cd \\"\\${1%%/*}\\" && exec bash ./start.sh" sh %k
 
 [Desktop Action Stop]
 Name=Stop R-AI
-Exec=sh -c "cd \\"${1%%/*}\\" && exec bash ./stop.sh" sh %k
+Exec=sh -c "cd \\"\\${1%%/*}\\" && exec bash ./stop.sh" sh %k

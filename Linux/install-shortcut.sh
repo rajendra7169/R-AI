@@ -45,7 +45,7 @@ Path=$USB_ROOT
 Icon=$ICON
 Terminal=false
 StartupNotify=true
-Categories=Utility;Network;
+Categories=Utility;
 Keywords=AI;LLM;Chat;Offline;Ollama;
 Actions=Stop;Terminal;
 
