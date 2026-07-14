@@ -25,11 +25,16 @@ const S = {
   logMode: localStorage.getItem("logMode") || "errors_only",
   mode: "chat", // 'chat' or 'image'
 
+  // Sidebar chat filter (matches titles and message bodies)
+  search: "",
+  // id of the user message currently open in the inline editor, if any
+  editing: null,
+
   // Attachments (multi-file)
   attachments: [],
 };
 
-// ÔöÇÔöÇ DOM ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── DOM ────────────────────────────────────────────
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
@@ -47,6 +52,9 @@ const D = {
   fInp: $("#f-inp"),
   fBar: $("#fbar"),
   nc: $("#nc-btn"),
+  cvSearch: $("#cv-search"),
+  cvSearchClr: $("#cv-search-clr"),
+  expBtn: $("#exp-btn"),
   sbTog: $("#sb-tog"),
   thTop: $("#th-top"),
   thSb: $("#th-sb"),
@@ -107,7 +115,7 @@ const D = {
   imgModalDownload: $("#img-modal-download"),
 };
 
-// ÔöÇÔöÇ Init ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Init ───────────────────────────────────────────
 async function init() {
   setupMarked();
   applyTheme(S.theme);
@@ -148,7 +156,7 @@ async function init() {
   setInterval(fetchModels, 15000);
 }
 
-// ÔöÇÔöÇ Hardware Stats ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Hardware Stats ─────────────────────────────────
 async function pollHW() {
   if (!IS_SERVED) return;
   try {
@@ -276,7 +284,7 @@ function updateSysUI() {
   else D.sysBtn.classList.remove("has-global");
 }
 
-// ÔöÇÔöÇ Models ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Models ─────────────────────────────────────────
 function isVision(name) {
   return VISION_MODELS.some((v) => (name || "").toLowerCase().includes(v));
 }
@@ -702,7 +710,7 @@ function toggleModelMenu(show) {
   D.modelBtn.classList.toggle("open", shouldOpen);
 }
 
-// ÔöÇÔöÇ File Attachments ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── File Attachments ───────────────────────────────
 async function handleAttach(files) {
   const list = Array.from(files || []).filter(Boolean);
   if (!list.length) return;
@@ -889,7 +897,7 @@ async function handleText(file) {
   return true;
 }
 
-// ÔöÇÔöÇ Conversation CRUD ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Conversation CRUD ──────────────────────────────
 function createConv() {
   const c = {
     id: gid(),
@@ -898,6 +906,7 @@ function createConv() {
     ts: Date.now(),
     model: S.model,
     sys: S.globalSys,
+    temp: currentTemp(),
   };
   S.convs.unshift(c);
   save();
@@ -928,9 +937,12 @@ function clearAll() {
 
 function switchConv(id) {
   S.curId = id;
+  S.editing = null;
   const conv = getConv();
   if (conv && conv.model) applyModel(conv.model);
   D.sysTa.value = conv?.sys || "";
+  const tempEl = document.getElementById("temp-input");
+  if (tempEl) tempEl.value = typeof conv?.temp === "number" ? conv.temp : 0.7;
   renderChat();
   renderSB();
   updateTitle();
@@ -940,7 +952,13 @@ function getConv() {
   return S.convs.find((c) => c.id === S.curId);
 }
 
-// ÔöÇÔöÇ Send / Stream to Ollama ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// Temperature currently set in the input, falling back to the 0.7 default.
+function currentTemp() {
+  const v = parseFloat(document.getElementById("temp-input")?.value);
+  return Number.isFinite(v) ? v : 0.7;
+}
+
+// ── Send / Stream to Ollama ────────────────────────
 async function sendMsg(text) {
   if ((!text.trim() && !S.attachments.length) || S.streaming) return;
 
@@ -1061,6 +1079,9 @@ async function streamOllama(conv) {
     // reply. The user can re-enable it via the brain toggle next to the
     // temperature input.
     const thinkOn = localStorage.getItem("g-think") === "1";
+    // Read the live control, then remember it on the conversation so each
+    // chat reopens with the temperature it was last run at.
+    conv.temp = currentTemp();
     const res = await fetch(OLLAMA + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1069,10 +1090,7 @@ async function streamOllama(conv) {
         messages: apiMsgs,
         stream: true,
         think: thinkOn,
-        options: {
-          temperature:
-            parseFloat(document.getElementById("temp-input")?.value) || 0.7,
-        },
+        options: { temperature: conv.temp },
       }),
       signal: S.abort.signal,
     });
@@ -1114,44 +1132,64 @@ async function streamOllama(conv) {
       }
     };
 
+    // Ollama streams newline-delimited JSON, but the bytes arrive in
+    // arbitrary network chunks — one JSON object is frequently split across
+    // two reads (the proxy forwards fixed-size reads, and TCP fragments
+    // further). Parsing each raw chunk directly would fail on the split line
+    // and, with the failure swallowed, silently drop those tokens — making
+    // long replies look truncated. So buffer across reads and only parse
+    // complete, newline-terminated lines; the trailing partial is carried
+    // into the next read and flushed at the end.
+    const handleLine = (line) => {
+      if (!line.trim()) return;
+      let p;
+      try {
+        p = JSON.parse(line);
+      } catch {
+        return;
+      }
+      if (p.message?.thinking) {
+        aiMsg.thinking = (aiMsg.thinking || "") + p.message.thinking;
+        ensureLiveShells();
+        if (thinkSummary) {
+          thinkSummary.textContent = aiMsg.thinking.length + " chars";
+        }
+        if (thinkBody) {
+          thinkBody.textContent = aiMsg.thinking;
+          // Auto-scroll the trace body so the newest tokens are in view
+          thinkBody.scrollTop = thinkBody.scrollHeight;
+        }
+      }
+      if (p.message?.content) {
+        aiMsg.content += p.message.content;
+        ensureLiveShells();
+        if (!contentStarted && contentEl) {
+          const det = contentEl.querySelector(".think-block.live");
+          if (det) {
+            det.classList.remove("live");
+            det.classList.add("done");
+            det.removeAttribute("open"); // auto-collapse when answer starts
+          }
+          contentStarted = true;
+        }
+        if (contentBody) contentBody.textContent = aiMsg.content;
+      }
+      scrollEnd();
+    };
+
+    let buf = "";
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const chunk = dec.decode(value, { stream: true });
-      for (const line of chunk.split("\n")) {
-        if (!line.trim()) continue;
-        try {
-          const p = JSON.parse(line);
-          if (p.message?.thinking) {
-            aiMsg.thinking = (aiMsg.thinking || "") + p.message.thinking;
-            ensureLiveShells();
-            if (thinkSummary) {
-              thinkSummary.textContent = aiMsg.thinking.length + " chars";
-            }
-            if (thinkBody) {
-              thinkBody.textContent = aiMsg.thinking;
-              // Auto-scroll the trace body so the newest tokens are in view
-              thinkBody.scrollTop = thinkBody.scrollHeight;
-            }
-          }
-          if (p.message?.content) {
-            aiMsg.content += p.message.content;
-            ensureLiveShells();
-            if (!contentStarted && contentEl) {
-              const det = contentEl.querySelector(".think-block.live");
-              if (det) {
-                det.classList.remove("live");
-                det.classList.add("done");
-                det.removeAttribute("open"); // auto-collapse when answer starts
-              }
-              contentStarted = true;
-            }
-            if (contentBody) contentBody.textContent = aiMsg.content;
-          }
-          scrollEnd();
-        } catch {}
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf("\n")) !== -1) {
+        handleLine(buf.slice(0, nl));
+        buf = buf.slice(nl + 1);
       }
     }
+    // Flush a final line that arrived without a trailing newline.
+    if (buf.trim()) handleLine(buf);
     // Final render. Collapse any thinking into a small details block
     // and render the answer below it.
     if (contentEl) {
@@ -1178,7 +1216,7 @@ async function streamOllama(conv) {
           '<span style="color:var(--t3);font-style:italic;">[Stopped]</span>';
     } else {
       if (contentEl)
-        contentEl.innerHTML = `<span style="color:var(--red);">ÔÜá ${esc(err.message)}</span>`;
+        contentEl.innerHTML = `<span style="color:var(--red);">⚠ ${esc(err.message)}</span>`;
       conv.msgs.pop();
     }
   } finally {
@@ -1194,7 +1232,7 @@ function stopStream() {
   if (S.abort) S.abort.abort();
 }
 
-// ÔöÇÔöÇ Markdown ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Markdown ───────────────────────────────────────
 function setupMarked() {
   if (typeof marked === "undefined") return;
   const rdr = new marked.Renderer();
@@ -1219,20 +1257,65 @@ function renderMd(text) {
   return marked.parse(text, { breaks: true });
 }
 
-// ÔöÇÔöÇ Rendering ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Rendering ──────────────────────────────────────
+// Body text of a message as the user would read it, ignoring any
+// document context we spliced in front of their actual prompt.
+function msgText(m) {
+  return m.role === "user" ? m.displayContent || m.content || "" : m.content || "";
+}
+
+// First line of message text containing the query, trimmed to fit the rail
+// and with the hit marked. Returns "" when nothing but the title matched.
+function searchSnippet(conv, q) {
+  for (const m of conv.msgs) {
+    const txt = msgText(m);
+    const at = txt.toLowerCase().indexOf(q);
+    if (at === -1) continue;
+    const from = Math.max(0, at - 24);
+    const raw = (from ? "…" : "") + txt.slice(from, from + 80).replace(/\s+/g, " ");
+    // esc() first, then mark the (now-escaped) needle so we never inject HTML.
+    const safe = esc(raw);
+    const needle = esc(txt.slice(at, at + q.length));
+    return safe.replace(needle, `<mark>${needle}</mark>`);
+  }
+  return "";
+}
+
+function convMatches(conv, q) {
+  if ((conv.title || "").toLowerCase().includes(q)) return true;
+  return conv.msgs.some((m) => msgText(m).toLowerCase().includes(q));
+}
+
 function renderSB() {
-  D.cvList.innerHTML = S.convs
-    .map(
-      (c) => `
+  const q = S.search.trim().toLowerCase();
+  const list = q ? S.convs.filter((c) => convMatches(c, q)) : S.convs;
+
+  if (!list.length) {
+    D.cvList.innerHTML = q
+      ? `<div class="cv-empty">No chats match<br><strong>${esc(S.search.trim())}</strong></div>`
+      : "";
+    return;
+  }
+
+  D.cvList.innerHTML = list
+    .map((c) => {
+      const snip = q ? searchSnippet(c, q) : "";
+      return `
         <div class="cv ${c.id === S.curId ? "act" : ""}" onclick="switchConv('${c.id}')">
             <i class="fa-regular fa-message ci"></i>
-            <span class="ct">${esc(c.title)}</span>
+            <span class="ct">${esc(c.title)}${snip ? `<span class="cv-snip">${snip}</span>` : ""}</span>
             <button class="cd" onclick="event.stopPropagation();delConv('${c.id}')" aria-label="Delete chat">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
-        </div>`,
-    )
+        </div>`;
+    })
     .join("");
+}
+
+function setSearch(q) {
+  S.search = q;
+  if (D.cvSearchClr) D.cvSearchClr.hidden = !q.trim();
+  renderSB();
 }
 
 function renderChat() {
@@ -1251,8 +1334,8 @@ function renderChat() {
   D.msgs.innerHTML = conv.msgs
     .map((msg, i) =>
       msg.role === "user"
-        ? renderUser(msg)
-        : renderAI(msg, i === conv.msgs.length - 1),
+        ? renderUser(msg, i)
+        : renderAI(msg, i === conv.msgs.length - 1, i),
     )
     .join("");
 
@@ -1262,7 +1345,7 @@ function renderChat() {
   scrollEnd();
 }
 
-function renderUser(msg) {
+function renderUser(msg, idx) {
   let media = "";
   const atts = Array.isArray(msg._attachments) ? msg._attachments : [];
   atts.forEach((a) => {
@@ -1280,14 +1363,35 @@ function renderUser(msg) {
   if (!msg.displayContent && rawTxt.includes("\n\n---\nUser: ")) {
     rawTxt = rawTxt.split("\n\n---\nUser: ").pop() || "";
   }
+
+  // Inline editor replaces the bubble entirely while open.
+  if (S.editing === msg.id) {
+    const editor = `<div class="msg-edit">
+            <textarea id="edit-ta" onkeydown="editKey(event,'${msg.id}')">${esc(rawTxt)}</textarea>
+            <div class="msg-edit-row">
+                <button class="msg-edit-btn" onclick="cancelEdit()">Cancel</button>
+                <button class="msg-edit-btn primary" onclick="saveEdit('${msg.id}')">Save &amp; resend</button>
+            </div>
+        </div>`;
+    return `<div class="mr usr"><div class="mc">${editor}</div><div class="ma u">U</div></div>`;
+  }
+
   const textBubble = rawTxt.trim()
     ? `<div class="ub"><div class="mt">${esc(rawTxt)}</div></div>`
     : "";
   const mediaEl = media ? `<div class="usr-attach">${media}</div>` : "";
-  return `<div class="mr usr"><div class="mc">${textBubble}${mediaEl}</div><div class="ma u">U</div></div>`;
+  const actions = S.streaming
+    ? ""
+    : `
+        <div class="mact u">
+            <button class="mab" onclick="startEdit('${msg.id}')" title="Edit and resend"><i class="fa-regular fa-pen-to-square"></i></button>
+            <button class="mab" onclick="forkFrom(${idx})" title="Branch a new chat from here"><i class="fa-solid fa-code-branch"></i></button>
+            <button class="mab" onclick="copyMsg('${msg.id}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+        </div>`;
+  return `<div class="mr usr"><div class="mc">${textBubble}${mediaEl}${actions}</div><div class="ma u">U</div></div>`;
 }
 
-function renderAI(msg, isLast) {
+function renderAI(msg, isLast, idx) {
   const parsed =
     S.streaming && isLast ? esc(msg.content) : renderMd(msg.content);
   const thinkingHtml = msg.thinking
@@ -1302,11 +1406,17 @@ function renderAI(msg, isLast) {
     (msg.thinking || msg.content
       ? body
       : '<span style="color:var(--t3);font-style:italic;">[Empty response]</span>');
+  const regen =
+    isLast && !S.streaming
+      ? `<button class="mab" onclick="regenerate()" title="Regenerate this reply"><i class="fa-solid fa-rotate-right"></i></button>`
+      : "";
   const actions =
     !S.streaming || !isLast
       ? `
         <div class="mact">
             <button class="mab" onclick="copyMsg('${msg.id}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+            ${regen}
+            <button class="mab" onclick="forkFrom(${idx})" title="Branch a new chat from here"><i class="fa-solid fa-code-branch"></i></button>
             <button class="mab ${msg.liked ? "lk" : ""}" onclick="rateMsg('${msg.id}','like')" title="Good response"><i class="fa-regular fa-thumbs-up"></i></button>
             <button class="mab ${msg.disliked ? "dlk" : ""}" onclick="rateMsg('${msg.id}','dislike')" title="Bad response"><i class="fa-regular fa-thumbs-down"></i></button>
         </div>`
@@ -1318,7 +1428,7 @@ function renderAI(msg, isLast) {
     </div>`;
 }
 
-// ÔöÇÔöÇ Actions ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Actions ────────────────────────────────────────
 function copyMsg(id) {
   const m = getConv()?.msgs.find((x) => x.id === id);
   if (m) navigator.clipboard.writeText(m.content).then(() => toast("Copied"));
@@ -1336,6 +1446,158 @@ function rateMsg(id, r) {
   save();
   renderChat();
 }
+// ── Edit / regenerate / branch / export ────────────
+function startEdit(id) {
+  if (S.streaming) return;
+  S.editing = id;
+  renderChat();
+  const ta = document.getElementById("edit-ta");
+  if (ta) {
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 320) + "px";
+  }
+}
+
+function cancelEdit() {
+  S.editing = null;
+  renderChat();
+}
+
+// Enter saves; Shift+Enter inserts a newline, matching the composer.
+function editKey(e, id) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    saveEdit(id);
+  }
+}
+
+async function saveEdit(id) {
+  const conv = getConv();
+  const ta = document.getElementById("edit-ta");
+  if (!conv || !ta || S.streaming) return;
+  const next = ta.value.trim();
+  const idx = conv.msgs.findIndex((m) => m.id === id);
+  if (idx === -1 || !next) return;
+
+  const msg = conv.msgs[idx];
+  // The stored content may carry attached-document context spliced in front
+  // of the user's actual prompt. Keep that prefix; replace only the prompt.
+  const marker = "\n\n---\nUser: ";
+  const at = (msg.content || "").lastIndexOf(marker);
+  msg.content = at === -1 ? next : msg.content.slice(0, at + marker.length) + next;
+  msg.displayContent = next;
+
+  // Every turn after the edited one describes a conversation that no
+  // longer happened, so drop them and answer again from this point.
+  conv.msgs.length = idx + 1;
+  if (idx === 0) {
+    conv.title = next.slice(0, 40) + (next.length > 40 ? "..." : "");
+  }
+
+  S.editing = null;
+  save();
+  renderChat();
+  renderSB();
+  updateTitle();
+  await streamOllama(conv);
+}
+
+async function regenerate() {
+  const conv = getConv();
+  if (!conv || S.streaming) return;
+  // Drop trailing assistant turns so the model re-answers the last user message.
+  while (conv.msgs.length && conv.msgs[conv.msgs.length - 1].role !== "user") {
+    conv.msgs.pop();
+  }
+  if (!conv.msgs.length) return;
+  save();
+  renderChat();
+  await streamOllama(conv);
+}
+
+function forkFrom(idx) {
+  const conv = getConv();
+  if (!conv || S.streaming) return;
+  const slice = conv.msgs.slice(0, idx + 1);
+  if (!slice.length) return;
+  const fork = {
+    id: gid(),
+    title: (conv.title || "Chat").replace(/ \(branch\)$/, "") + " (branch)",
+    msgs: JSON.parse(JSON.stringify(slice)),
+    ts: Date.now(),
+    model: conv.model || S.model,
+    sys: conv.sys || "",
+    temp: conv.temp,
+  };
+  S.convs.unshift(fork);
+  save();
+  switchConv(fork.id);
+  renderSB();
+  toast("Branched into a new chat");
+}
+
+function exportChat() {
+  const conv = getConv();
+  if (!conv || !conv.msgs.length) {
+    toast("Nothing to export yet");
+    return;
+  }
+  const out = [
+    `# ${conv.title || "Chat"}`,
+    "",
+    `- **Model:** ${conv.model || "unknown"}`,
+    `- **Started:** ${new Date(conv.ts || Date.now()).toLocaleString()}`,
+    `- **Exported:** ${new Date().toLocaleString()}`,
+  ];
+  if (conv.sys) {
+    out.push("", "> **System prompt**", "> " + conv.sys.replace(/\n/g, "\n> "));
+  }
+  out.push("", "---", "");
+
+  conv.msgs.forEach((m) => {
+    out.push(`## ${m.role === "user" ? "You" : "R-AI"}`, "");
+    const atts = Array.isArray(m._attachments) ? m._attachments : [];
+    if (atts.length) {
+      out.push(
+        `_Attachments: ${atts.map((a) => a.name || a.type).join(", ")}_`,
+        "",
+      );
+    }
+    if (m.role === "assistant" && m.thinking) {
+      out.push(
+        "<details><summary>Reasoning</summary>",
+        "",
+        m.thinking,
+        "",
+        "</details>",
+        "",
+      );
+    }
+    out.push(msgText(m).trim() || "_(no content)_", "");
+  });
+
+  const slug =
+    (conv.title || "chat")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48) || "chat";
+
+  const url = URL.createObjectURL(
+    new Blob([out.join("\n")], { type: "text/markdown;charset=utf-8" }),
+  );
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast("Exported as Markdown");
+}
+
 function copyCB(btn) {
   const code = btn.closest(".cblk").querySelector("code").innerText;
   navigator.clipboard.writeText(code).then(() => {
@@ -1423,7 +1685,7 @@ function toast(msg) {
   setTimeout(() => t.remove(), 2600);
 }
 
-// ÔöÇÔöÇ Persistence ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Persistence ────────────────────────────────────
 let saveTimer = null;
 function save() {
   if (IS_SERVED) {
@@ -1457,7 +1719,7 @@ async function load() {
       S.convs = [];
     }
   }
-  // ÔöÇÔöÇ Sanitize: heal any conversation that is missing required fields
+  // ── Sanitize: heal any conversation that is missing required fields
   // (handles old schema that used `messages` instead of `msgs`, or any
   //  partial/corrupted entries that snuck in from a previous version)
   S.convs = (Array.isArray(S.convs) ? S.convs : []).map((c) => ({
@@ -1466,7 +1728,10 @@ async function load() {
     ts: c.ts || Date.now(),
     model: c.model || "",
     sys: c.sys || "",
-    // migrate old `messages` key ÔåÆ `msgs`; fall back to []
+    // Per-chat sampling temperature. Chats saved before this existed have
+    // no value; leave it undefined so switchConv falls back to the default.
+    temp: typeof c.temp === "number" ? c.temp : undefined,
+    // migrate old `messages` key → `msgs`; fall back to []
     msgs: Array.isArray(c.msgs)
       ? c.msgs
       : Array.isArray(c.messages)
@@ -1484,7 +1749,7 @@ function esc(t) {
   return d.innerHTML;
 }
 
-// ÔöÇÔöÇ Events ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Events ─────────────────────────────────────────
 function bind() {
   D.send.addEventListener("click", () =>
     S.streaming ? stopStream() : sendMsg(D.inp.value),
@@ -1503,6 +1768,27 @@ function bind() {
   D.nc.addEventListener("click", () => {
     if (!S.streaming) createConv();
   });
+
+  // Chat search
+  if (D.cvSearch) {
+    D.cvSearch.addEventListener("input", (e) => setSearch(e.target.value));
+    D.cvSearch.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        D.cvSearch.value = "";
+        setSearch("");
+        D.cvSearch.blur();
+      }
+    });
+  }
+  if (D.cvSearchClr) {
+    D.cvSearchClr.addEventListener("click", () => {
+      D.cvSearch.value = "";
+      setSearch("");
+      D.cvSearch.focus();
+    });
+  }
+  if (D.expBtn) D.expBtn.addEventListener("click", exportChat);
+
   D.sbTog.addEventListener("click", () => toggleSB());
   D.ov.addEventListener("click", () => toggleSB(false));
   // Sidebar-internal hamburger: toggles between expanded and the
@@ -1621,6 +1907,10 @@ function bind() {
       closeSysPanel();
       return;
     }
+    if (S.editing) {
+      cancelEdit();
+      return;
+    }
   });
 
   document.addEventListener("click", (e) => {
@@ -1646,5 +1936,5 @@ function bind() {
   });
 }
 
-// ÔöÇÔöÇ Start ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Start ──────────────────────────────────────────
 init();

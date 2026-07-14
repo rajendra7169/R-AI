@@ -1,6 +1,6 @@
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-           DESIGN TOKENS ÔÇö Gemini/ChatGPT hybrid palette
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+      /* ══════════════════════════════════════════════
+           DESIGN TOKENS — Gemini/ChatGPT hybrid palette
+        ══════════════════════════════════════════════ */
       :root {
         --font: 'Inter', sans-serif;
         --sb-w: 260px;
@@ -11,7 +11,7 @@
       }
 
       [data-theme='dark'] {
-        /* Backgrounds ÔÇö ChatGPT layering */
+        /* Backgrounds — ChatGPT layering */
         --bg: #212121;
         --bg2: #171717;
         --bg3: #2a2a2a;
@@ -38,7 +38,7 @@
         --ov: rgba(0, 0, 0, 0.6);
         --tst: #3a3a3a;
 
-        /* Brand gradient ÔÇö Gemini palette */
+        /* Brand gradient — Gemini palette */
         --grad1: #4285f4;
         --grad2: #9b72cb;
         --grad3: #d96570;
@@ -81,9 +81,9 @@
         --orange: #f29900;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            RESET + BASE
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       *,
       *::before,
       *::after {
@@ -116,9 +116,9 @@
         border-radius: 4px;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            LAYOUT SHELL
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       #app {
         display: flex;
         height: 100vh;
@@ -126,9 +126,9 @@
         overflow: hidden;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-           SIDEBAR ÔÇö ChatGPT flavour
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+      /* ══════════════════════════════════════════════
+           SIDEBAR — ChatGPT flavour
+        ══════════════════════════════════════════════ */
       #sidebar {
         width: var(--sb-w);
         min-width: var(--sb-w);
@@ -182,7 +182,8 @@
       #sidebar.mini .sb-hd {
         padding: 14px 8px 8px;
       }
-      #sidebar.mini .sb-list {
+      #sidebar.mini .sb-list,
+      #sidebar.mini .sb-search {
         display: none;
       }
       #sidebar.mini .sb-ft {
@@ -290,6 +291,78 @@
       }
       .nc-btn i {
         font-size: 13px;
+      }
+
+      /* Chat search */
+      .sb-search {
+        position: relative;
+        display: flex;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .sb-search > i {
+        position: absolute;
+        left: 12px;
+        font-size: 11.5px;
+        color: var(--t3);
+        pointer-events: none;
+      }
+      .sb-search input {
+        width: 100%;
+        padding: 8px 28px 8px 30px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--bd);
+        background: transparent;
+        color: var(--t1);
+        font-family: var(--font);
+        font-size: 13px;
+        outline: none;
+        transition:
+          border-color var(--spd),
+          background var(--spd);
+      }
+      .sb-search input::placeholder {
+        color: var(--t3);
+      }
+      .sb-search input:focus {
+        border-color: var(--bd2);
+        background: var(--bgh);
+      }
+      .sb-search-clr {
+        position: absolute;
+        right: 8px;
+        background: none;
+        border: none;
+        color: var(--t3);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        font-size: 11px;
+        display: flex;
+      }
+      .sb-search-clr:hover {
+        color: var(--t1);
+      }
+      .cv-empty {
+        padding: 18px 14px;
+        font-size: 12.5px;
+        color: var(--t3);
+        text-align: center;
+        line-height: 1.6;
+      }
+      .cv-snip {
+        display: block;
+        font-size: 11.5px;
+        color: var(--t3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+      }
+      .cv mark {
+        background: transparent;
+        color: var(--grad1);
+        font-weight: 600;
       }
 
       /* Conversation list */
@@ -403,9 +476,9 @@
         display: block;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            MAIN PANEL
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       #main {
         flex: 1;
         display: flex;
@@ -415,7 +488,7 @@
         background: var(--bg);
       }
 
-      /* ÔöÇÔöÇ Topbar ÔöÇÔöÇ */
+      /* ── Topbar ── */
       #topbar {
         display: flex;
         align-items: center;
@@ -826,9 +899,9 @@
       }
     }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            CHAT AREA
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       #chat {
         flex: 1;
         overflow-y: auto;
@@ -837,9 +910,9 @@
         flex-direction: column;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-           WELCOME SCREEN ÔÇö Gemini style
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+      /* ══════════════════════════════════════════════
+           WELCOME SCREEN — Gemini style
+        ══════════════════════════════════════════════ */
       #welcome {
         flex: 1;
         display: flex;
@@ -1015,7 +1088,7 @@
         font-weight: 400;
       }
 
-      /* Suggestion chips ÔÇö Gemini style */
+      /* Suggestion chips — Gemini style */
       .sg {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -1076,9 +1149,9 @@
         color: #ea863b;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            MESSAGES
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       #msgs {
         max-width: 780px;
         width: 100%;
@@ -1158,7 +1231,7 @@
         max-width: 82%;
       }
 
-      /* User bubble ÔÇö ChatGPT style */
+      /* User bubble — ChatGPT style */
       .ub {
         background: var(--bg-u);
         border-radius: 22px;
@@ -1370,6 +1443,67 @@
       .mab.dlk {
         color: var(--red);
       }
+      /* User-message actions sit under the bubble, right-aligned to match it */
+      .mact.u {
+        justify-content: flex-end;
+      }
+
+      /* Inline edit of a user message */
+      .msg-edit {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .msg-edit textarea {
+        width: 100%;
+        min-height: 72px;
+        resize: vertical;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--bd2);
+        background: var(--bg);
+        color: var(--t1);
+        font-family: var(--font);
+        font-size: 14px;
+        line-height: 1.55;
+        outline: none;
+      }
+      .msg-edit textarea:focus {
+        border-color: var(--grad1);
+      }
+      .msg-edit-row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+      .msg-edit-btn {
+        padding: 6px 14px;
+        border-radius: var(--radius-pill);
+        border: 1px solid var(--bd);
+        background: transparent;
+        color: var(--t2);
+        font-family: var(--font);
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          background var(--spd),
+          color var(--spd);
+      }
+      .msg-edit-btn:hover {
+        background: var(--bgh);
+        color: var(--t1);
+      }
+      .msg-edit-btn.primary {
+        background: var(--grad1);
+        border-color: var(--grad1);
+        color: #fff;
+      }
+      .msg-edit-btn.primary:hover {
+        opacity: 0.9;
+        color: #fff;
+      }
 
       /* Typing dots */
       .typ {
@@ -1404,9 +1538,9 @@
         }
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-           INPUT AREA ÔÇö Gemini/ChatGPT style
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+      /* ══════════════════════════════════════════════
+           INPUT AREA — Gemini/ChatGPT style
+        ══════════════════════════════════════════════ */
       #inp-area {
         padding: 8px 20px 18px;
         flex-shrink: 0;
@@ -1535,7 +1669,7 @@
         color: var(--red);
       }
 
-      /* The main input wrapper ÔÇö pill/rounded-rectangle */
+      /* The main input wrapper — pill/rounded-rectangle */
       .iw {
         max-width: 740px;
         width: 100%;
@@ -1556,7 +1690,7 @@
         box-shadow: 0 2px 20px var(--shd);
       }
 
-      /* ÔöÇÔöÇ Model Selector Row (INSIDE input, at top) ÔöÇÔöÇ */
+      /* ── Model Selector Row (INSIDE input, at top) ── */
       .model-row {
         display: flex;
         align-items: center;
@@ -1748,7 +1882,7 @@
         border-color: var(--bd2);
       }
 
-      /* ÔöÇÔöÇ Text row (textarea + action buttons) ÔöÇÔöÇ */
+      /* ── Text row (textarea + action buttons) ── */
       .text-row {
         display: flex;
         align-items: flex-end;
@@ -1848,9 +1982,9 @@
         max-width: 740px;
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            TOASTS
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       #toasts {
         position: fixed;
         bottom: 90px;
@@ -1896,9 +2030,9 @@
         }
       }
 
-      /* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+      /* ══════════════════════════════════════════════
            RESPONSIVE
-        ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+        ══════════════════════════════════════════════ */
       @media (max-width: 768px) {
         #sidebar {
           position: fixed;

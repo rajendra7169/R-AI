@@ -35,7 +35,7 @@
   </head>
   <body>
     <div id="app">
-      <!-- ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ SIDEBAR ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ -->
+      <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
       <aside id="sidebar" role="navigation" aria-label="Chat history">
         <div class="sb-hd">
           <div class="sb-brand-row">
@@ -58,6 +58,24 @@
             <i class="fa-solid fa-plus"></i>
             <span>New chat</span>
           </button>
+          <div class="sb-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              id="cv-search"
+              type="text"
+              placeholder="Search chats"
+              aria-label="Search chats"
+              autocomplete="off"
+            />
+            <button
+              class="sb-search-clr"
+              id="cv-search-clr"
+              aria-label="Clear search"
+              hidden
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
         </div>
 
         <div class="sb-list" id="cv-list"></div>
@@ -70,6 +88,14 @@
             title="Toggle theme"
           >
             <i class="fa-solid fa-moon"></i>
+          </button>
+          <button
+            class="sf-btn"
+            id="exp-btn"
+            aria-label="Export chat"
+            title="Export this chat as Markdown"
+          >
+            <i class="fa-solid fa-file-arrow-down"></i>
           </button>
           <div class="sf-sp"></div>
           <button
@@ -85,7 +111,7 @@
 
       <div id="overlay"></div>
 
-      <!-- ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ MAIN ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ -->
+      <!-- ═══════════════════ MAIN ═══════════════════ -->
       <main id="main">
         <!-- Top Bar -->
         <header id="topbar">
@@ -317,7 +343,7 @@
             <!-- File/image preview bar (inside the box) -->
             <div class="fbar" id="fbar"></div>
 
-            <!-- Model selector row ÔÇö INSIDE the input box at top -->
+            <!-- Model selector row — INSIDE the input box at top -->
             <div class="model-row">
               <div class="model-dd" id="model-dd">
                 <button
