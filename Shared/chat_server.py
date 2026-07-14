@@ -112,12 +112,30 @@ SD_BINARY = _find_sd_binary()
 SD_MODEL = os.path.join(SCRIPT_DIR, "models", "CyberRealistic_V3.3_FP16.safetensors")
 SD_ENABLED = SD_BINARY is not None and os.path.isfile(SD_MODEL)
 
+def _sd_env():
+    """Environment for launching the SD binary.
+
+    libstable-diffusion.so ships next to the binary, but the dynamic loader
+    only searches system paths and the binary was not built with an $ORIGIN
+    rpath — so without this it dies with "libstable-diffusion.so: cannot open
+    shared object file". Put the binary's own directory on the library path.
+    (Windows finds DLLs next to the .exe automatically, so this is a no-op
+    there; macOS uses DYLD_LIBRARY_PATH.)
+    """
+    env = os.environ.copy()
+    if SD_BINARY:
+        sd_dir = os.path.dirname(SD_BINARY)
+        for var in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
+            prev = env.get(var, "")
+            env[var] = sd_dir + (os.pathsep + prev if prev else "")
+    return env
+
 def _test_sd_binary():
     """Test if the SD binary can actually execute (catches missing VC++ runtime on Windows)."""
     if not SD_BINARY or not os.path.isfile(SD_BINARY):
         return False
     try:
-        result = subprocess.run([SD_BINARY, "-h"], capture_output=True, timeout=10)
+        result = subprocess.run([SD_BINARY, "-h"], capture_output=True, timeout=10, env=_sd_env())
         # sd -h returns non-zero but prints help; just check it doesn't crash with DLL errors
         stderr = result.stderr.decode('utf-8', errors='ignore').lower()
         if 'dll' in stderr or 'vcruntime' in stderr or 'msvcp' in stderr:
@@ -798,8 +816,9 @@ def _run_sd_generation(job_id, payload, output_path):
 
     proc = None
     try:
-        # Merge stdout+stderr so we catch progress regardless of which stream sd uses
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        # Merge stdout+stderr so we catch progress regardless of which stream sd uses.
+        # env=_sd_env() so the binary finds its bundled libstable-diffusion.so.
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=_sd_env())
         # Start a thread to parse combined output
         output_thread = threading.Thread(
             target=_parse_sd_output,
@@ -1172,6 +1191,11 @@ class ChatHandler(http.server.BaseHTTPRequestHandler):
                 content = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # The UI is a single self-contained HTML file that we rebuild in
+            # place during development. Without this, browsers cache it and keep
+            # running an old copy after an update — so a fixed UI never reaches
+            # the user until a manual hard-reload. Always serve it fresh.
+            self.send_header("Cache-Control", "no-store, must-revalidate")
             self._cors_headers()
             self.end_headers()
             self.wfile.write(content)

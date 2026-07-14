@@ -32,6 +32,12 @@ export OLLAMA_RUNNERS_DIR="$OLLAMA_RUNTIME/runners"
 export OLLAMA_TMPDIR="$OLLAMA_RUNTIME/tmp"
 export OLLAMA_ORIGINS="*"
 export OLLAMA_HOST="127.0.0.1:11434"
+# Ollama otherwise defaults every model to a 4096-token window. Several of the
+# bundled models cannot context-shift, so once a chat fills 4096 tokens the
+# reply just stops mid-sentence. 8192 doubles the usable conversation length
+# and costs almost nothing in VRAM (the KV cache grows a little; Ollama simply
+# offloads a couple fewer layers). Override by exporting it before launch.
+export OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-8192}"
 mkdir -p "$OLLAMA_RUNTIME/runners" "$OLLAMA_RUNTIME/tmp"
 # -------------------------------------------------------
 

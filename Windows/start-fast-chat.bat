@@ -14,6 +14,9 @@ echo.
 set "OLLAMA_MODELS=%~dp0..\Shared\models\ollama_data"
 set "OLLAMA_ORIGINS=*"
 set "OLLAMA_HOST=127.0.0.1:11434"
+:: Default context is only 4096 tokens; several models cannot context-shift, so
+:: a chat that fills 4096 tokens stops mid-reply. 8192 doubles it cheaply.
+if not defined OLLAMA_CONTEXT_LENGTH set "OLLAMA_CONTEXT_LENGTH=8192"
 :: Force only one model loaded at a time. Without this, switching models
 :: mid-session loads the new one alongside the old, which OOMs cards with
 :: limited VRAM (6 GB cards can't fit two 5 GB Q4 models together).
